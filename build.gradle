@@ -1,0 +1,59 @@
+task wrapper(type: Wrapper) {
+    gradleVersion = '2.4'
+}
+
+apply plugin: 'java'
+apply plugin: 'maven'
+apply plugin: 'eclipse'
+
+group = 'com.palantir.gerrit.gerritci'
+version = '0.1.0'
+
+description = """gerrit-ci"""
+
+sourceCompatibility = 1.7
+targetCompatibility = 1.7
+
+jar {
+    manifest {
+        attributes(
+            'Gerrit-PluginName': project.name,
+            'Gerrit-ApiType': apiType,
+            'Gerrit-ApiVersion': apiVersion,
+            //'Gerrit-Module': ,
+            //'Gerrit-HttpModule': ,
+            //'Gerrit-SshModule': ,
+            'Implementation-Vendor': 'Palantir',
+            'Implementation-URL': '',
+            'Implementation-Title': "${apiType} ${project.name}",
+            'Implementation-Version': version,
+        )
+    }
+}
+
+repositories {
+    mavenLocal()
+    mavenCentral()
+}
+
+dependencies {
+    compile(
+        [group: 'com.google.gerrit', name: "gerrit-${apiType}-api", version: apiVersion]
+    )
+}
+
+task copy(type:Exec) {
+    executable "vagrant"
+    args 'ssh', '-c', "cp /vagrant/build/libs/gerrit-ci-${version}.jar ~/gerrit/plugins"
+}
+copy.mustRunAfter build
+
+task reload(type:Exec) {
+    executable "ssh"
+    args '-o', 'UserKnownHostsFile=/dev/null', '-o', 'StrictHostKeyChecking=no', '-p', '29418',
+        'localhost', 'gerrit', 'plugin', 'reload', 'gerrit-ci'
+}
+reload.mustRunAfter copy
+
+task all(dependsOn: [build, copy, reload])
+
