@@ -2,9 +2,19 @@ task wrapper(type: Wrapper) {
     gradleVersion = '2.4'
 }
 
+buildscript {
+    repositories {
+        jcenter()
+    }
+    dependencies {
+        classpath 'de.richsource.gradle.plugins:gwt-gradle-plugin:0.6'
+    }
+}
+
 apply plugin: 'java'
 apply plugin: 'maven'
 apply plugin: 'eclipse'
+apply plugin: 'gwt'
 
 group = 'com.palantir.gerrit.gerritci'
 version = '0.1.0'
@@ -14,33 +24,55 @@ description = """gerrit-ci"""
 sourceCompatibility = 1.7
 targetCompatibility = 1.7
 
+repositories {
+    mavenLocal()
+    mavenCentral()
+}
+
 jar {
+    from 'build/gwt/include'
+
     manifest {
         attributes(
             'Gerrit-PluginName': project.name,
             'Gerrit-ApiType': apiType,
             'Gerrit-ApiVersion': apiVersion,
-            //'Gerrit-Module': ,
-            //'Gerrit-HttpModule': ,
-            //'Gerrit-SshModule': ,
+            'Gerrit-Module': 'com.palantir.gerrit.gerritci.Module',
+            'Gerrit-HttpModule': 'com.palantir.gerrit.gerritci.HttpModule',
             'Implementation-Vendor': 'Palantir',
-            'Implementation-URL': '',
+            'Implementation-URL': 'https://github.com/palantir/gerrit-ci',
             'Implementation-Title': "${apiType} ${project.name}",
             'Implementation-Version': version,
         )
     }
 }
 
-repositories {
-    mavenLocal()
-    mavenCentral()
-}
-
 dependencies {
     compile(
-        [group: 'com.google.gerrit', name: "gerrit-${apiType}-api", version: apiVersion]
+        [group: 'com.google.gerrit', name: "gerrit-${apiType}-api", version: apiVersion],
+        [group: 'com.google.gerrit', name: 'gerrit-plugin-gwtui', version: apiVersion]
     )
 }
+
+gwt {
+    gwtVersion = '2.6.1'
+    modules 'com.palantir.gerrit.gerritci.settings'
+
+    compiler {
+        disableClassMetadata = true
+        disableCastChecking = true
+    }
+}
+
+// Moves output of GWT compilation under a /static directory so it's packed into the JAR correctly
+task copyGwt(type:Copy) {
+    from 'build/gwt/out'
+    into 'build/gwt/include/static'
+}
+copyGwt.dependsOn compileGwt
+copyGwt.mustRunAfter compileGwt
+build.dependsOn copyGwt
+build.mustRunAfter copyGwt
 
 task copy(type:Exec) {
     executable "vagrant"
