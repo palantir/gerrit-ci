@@ -9,7 +9,7 @@
     <inherits name="com.google.gwt.http.HTTP" />
 
     <!-- Specify the app entry point class. -->
-    <entry-point class="com.palantir.gerrit.gerritci.client.PluginSettingsScreen" />
+    <entry-point class="com.palantir.gerrit.gerritci.ui.client.PluginSettingsScreen" />
 
     <!-- <stylesheet src="hello.css"/> -->
 </module>

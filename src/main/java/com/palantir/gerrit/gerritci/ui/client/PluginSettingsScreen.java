@@ -1,4 +1,4 @@
-package com.palantir.gerrit.gerritci.client;
+package com.palantir.gerrit.gerritci.ui.client;
 
 import com.google.gerrit.plugin.client.Plugin;
 import com.google.gerrit.plugin.client.PluginEntryPoint;

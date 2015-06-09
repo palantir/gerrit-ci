@@ -1,6 +1,8 @@
-package com.palantir.gerrit.gerritci;
+package com.palantir.gerrit.gerritci.ui;
 
 import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -15,6 +17,8 @@ import com.google.gerrit.extensions.webui.TopMenu;
 import com.google.inject.Inject;
 import com.offbytwo.jenkins.model.Job;
 import com.offbytwo.jenkins.model.JobWithDetails;
+import com.palantir.gerrit.gerritci.managers.JenkinsManager;
+import com.palantir.gerrit.gerritci.models.JenkinsServerConfiguration;
 
 public class TopMenuExtension implements TopMenu {
 
@@ -31,12 +35,22 @@ public class TopMenuExtension implements TopMenu {
 
     @Override
     public List<MenuEntry> getEntries() {
-        // NOTE: This is here for testing purposes because I don't have a better place to put it.
-        Map<String, Job> jobs = JenkinsManager.getJobs();
+        /*
+         * NOTE: This is here for testing purposes because I don't have a better place to put it.
+         */
+        JenkinsServerConfiguration jsc = new JenkinsServerConfiguration();
+        try {
+            jsc.setUri(new URI("http://localhost:8000"));
+        } catch(URISyntaxException e) {
+            return Lists.newArrayList();
+        }
+
+        Map<String, Job> jobs = JenkinsManager.getJobs(jsc);
         for(String key: jobs.keySet()) {
             try {
                 JobWithDetails job = jobs.get(key).details();
                 logger.info("Name: {} Url: {}", job.getName(), job.getUrl());
+                logger.info(JenkinsManager.getJobXml(jsc, job.getName()));
             } catch(IOException e) {
                 logger.error("Error getting details for job: {}", key, e);
             }

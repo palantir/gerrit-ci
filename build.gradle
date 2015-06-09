@@ -38,6 +38,18 @@ sourceSets {
     }
 }
 
+/*
+ * Configure the eclipse plugin to use the new provided configuration and download all
+ * sources and javadoc JARs.
+ */
+eclipse {
+    classpath {
+        plusConfigurations += [configurations.provided]
+        downloadSources = true
+        downloadJavadoc = true
+    }
+}
+
 repositories {
     mavenLocal()
     mavenCentral()
@@ -84,7 +96,7 @@ dependencies {
 
 gwt {
     gwtVersion = '2.6.1'
-    modules 'com.palantir.gerrit.gerritci.settings'
+    modules 'com.palantir.gerrit.gerritci.ui.settings'
 
     compiler {
         disableClassMetadata = true
