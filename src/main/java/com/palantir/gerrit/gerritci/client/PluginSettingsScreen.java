@@ -7,14 +7,14 @@ import com.google.gwt.user.client.ui.InlineLabel;
 
 public class PluginSettingsScreen extends PluginEntryPoint {
 
-	@Override
-	public void onPluginLoad() {
-		Plugin.get().screen("settings", new Screen.EntryPoint() {
-			@Override
-			public void onLoad(Screen screen) {
-				screen.add(new InlineLabel("Gerrit-CI Admin Settings"));
-				screen.show();
-			}
-		});
-	}
+    @Override
+    public void onPluginLoad() {
+        Plugin.get().screen("settings", new Screen.EntryPoint() {
+            @Override
+            public void onLoad(Screen screen) {
+                screen.add(new InlineLabel("Gerrit-CI Admin Settings"));
+                screen.show();
+            }
+        });
+    }
 }

@@ -24,9 +24,25 @@ description = """gerrit-ci"""
 sourceCompatibility = 1.7
 targetCompatibility = 1.7
 
+/*
+ * The provided configuration will designate dependencies that are required for compile and
+ * runtime but should not be exported to the JAR.
+ */
+configurations {
+    provided
+}
+
+sourceSets {
+    main {
+        compileClasspath += configurations.provided
+    }
+}
+
 repositories {
     mavenLocal()
     mavenCentral()
+
+    maven { url "http://repo.jenkins-ci.org/public/" }
 }
 
 jar {
@@ -45,12 +61,24 @@ jar {
             'Implementation-Version': version,
         )
     }
+
+    // Include compile dependencies in JAR.
+    doFirst {
+        from configurations.compile.collect { it.isDirectory() ? it : zipTree(it) }
+    }
 }
 
 dependencies {
-    compile(
+    provided(
         [group: 'com.google.gerrit', name: "gerrit-${apiType}-api", version: apiVersion],
         [group: 'com.google.gerrit', name: 'gerrit-plugin-gwtui', version: apiVersion]
+    )
+
+    compile(
+        [group: 'com.offbytwo.jenkins', name: 'jenkins-client', version: '0.3.0'],
+        [group: 'org.slf4j', name: 'slf4j-api', version: '1.7.12'],
+        [group: 'org.slf4j', name: 'slf4j-log4j12', version: '1.7.12'],
+        [group: 'log4j', name: 'log4j', version: '1.2.17']
     )
 }
 
