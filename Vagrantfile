@@ -28,6 +28,10 @@ Vagrant.configure(2) do |config|
     # Install Java
     sudo yum -y install java-1.7.0-openjdk
 
+    # Install Palantir internal root CA
+    sudo keytool -keystore /usr/lib/jvm/jre/lib/security/cacerts -storepass changeit -importcert \
+        -alias palantirinternalrootca -file /vagrant/resources/palantirinternalrootca.crt -noprompt
+
     # Install Gerrit
     curl -L -O http://gerrit-releases.storage.googleapis.com/gerrit-2.11.1.war
     mkdir gerrit
