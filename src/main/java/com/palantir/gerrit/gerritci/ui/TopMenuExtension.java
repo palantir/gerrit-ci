@@ -1,12 +1,15 @@
 package com.palantir.gerrit.gerritci.ui;
 
 import java.io.IOException;
+import java.io.StringWriter;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.velocity.Template;
+import org.apache.velocity.VelocityContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -18,6 +21,7 @@ import com.google.inject.Inject;
 import com.offbytwo.jenkins.model.Job;
 import com.offbytwo.jenkins.model.JobWithDetails;
 import com.palantir.gerrit.gerritci.managers.JenkinsManager;
+import com.palantir.gerrit.gerritci.managers.VelocityProvider;
 import com.palantir.gerrit.gerritci.models.JenkinsServerConfiguration;
 
 public class TopMenuExtension implements TopMenu {
@@ -54,8 +58,19 @@ public class TopMenuExtension implements TopMenu {
             } catch(IOException e) {
                 logger.error("Error getting details for job: {}", key, e);
             }
-
         }
+
+        VelocityProvider velocityManager = new VelocityProvider();
+
+        VelocityContext velocityContext = velocityManager.getVelocityContext();
+        velocityContext.put("stuff", "stuff");
+
+        Template template =
+            velocityManager.getVelocityEngine().getTemplate("/jenkins-verify-job.vm");
+
+        StringWriter xml = new StringWriter();
+        template.merge(velocityContext, xml);
+        logger.info(xml.toString());
 
         return menuEntries;
     }
