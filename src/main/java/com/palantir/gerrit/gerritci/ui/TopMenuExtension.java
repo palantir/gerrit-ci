@@ -54,7 +54,6 @@ public class TopMenuExtension implements TopMenu {
             try {
                 JobWithDetails job = jobs.get(key).details();
                 logger.info("Name: {} Url: {}", job.getName(), job.getUrl());
-                logger.info(JenkinsManager.getJobXml(jsc, job.getName()));
             } catch(IOException e) {
                 logger.error("Error getting details for job: {}", key, e);
             }
@@ -70,7 +69,9 @@ public class TopMenuExtension implements TopMenu {
 
         StringWriter xml = new StringWriter();
         template.merge(velocityContext, xml);
-        logger.info(xml.toString());
+        String jobConfig = xml.toString();
+
+        JenkinsManager.createJob(jsc, "test-job", jobConfig);
 
         return menuEntries;
     }

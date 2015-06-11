@@ -67,6 +67,7 @@ jar {
             'Gerrit-ApiVersion': apiVersion,
             'Gerrit-Module': 'com.palantir.gerrit.gerritci.Module',
             'Gerrit-HttpModule': 'com.palantir.gerrit.gerritci.HttpModule',
+            'Gerrit-ReloadMode': 'restart',
             'Implementation-Vendor': 'Palantir',
             'Implementation-URL': 'https://github.com/palantir/gerrit-ci',
             'Implementation-Title': "${apiType} ${project.name}",
