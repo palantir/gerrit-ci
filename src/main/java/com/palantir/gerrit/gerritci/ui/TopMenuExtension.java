@@ -21,19 +21,29 @@ import com.google.inject.Inject;
 import com.offbytwo.jenkins.model.Job;
 import com.offbytwo.jenkins.model.JobWithDetails;
 import com.palantir.gerrit.gerritci.constants.JobType;
-import com.palantir.gerrit.gerritci.managers.JenkinsManager;
-import com.palantir.gerrit.gerritci.managers.VelocityProvider;
 import com.palantir.gerrit.gerritci.models.JenkinsServerConfiguration;
+import com.palantir.gerrit.gerritci.providers.JenkinsProvider;
+import com.palantir.gerrit.gerritci.providers.VelocityProvider;
 
+/**
+ * This class extends the Gerrit top menu and allows us to add sections and entries based on current
+ * user permissions, project selection, and more.
+ */
 public class TopMenuExtension implements TopMenu {
 
     private static final Logger logger = LoggerFactory.getLogger(TopMenuExtension.class);
 
+    // Entries for the top menu. Sub-items for each entry are added to its MenuEntry object
     private final List<MenuEntry> menuEntries;
 
     @Inject
     public TopMenuExtension(@PluginName String name) {
         menuEntries = Lists.newArrayList();
+
+        /*
+         * By adding GerritTopMenu.PROJECTS, we are extending what is currently in the "Projects"
+         * entry in the top menu with whatever MenuItems we add
+         */
         menuEntries.add(new MenuEntry(GerritTopMenu.PROJECTS,
             Collections.singletonList(new MenuItem("Gerrit-CI", "#/x/" + name + "/settings"))));
     }
@@ -41,16 +51,15 @@ public class TopMenuExtension implements TopMenu {
     @Override
     public List<MenuEntry> getEntries() {
         /*
-         * NOTE: This is here for testing purposes because I don't have a better place to put it.
+         * NOTE: This is here for testing purposes because I don't have a better place to
+         * put it.
          */
         JenkinsServerConfiguration jsc = new JenkinsServerConfiguration();
         try {
             jsc.setUri(new URI("http://localhost:8000"));
-        } catch(URISyntaxException e) {
-            return Lists.newArrayList();
-        }
+        } catch(URISyntaxException e) {}
 
-        Map<String, Job> jobs = JenkinsManager.getJobs(jsc);
+        Map<String, Job> jobs = JenkinsProvider.getJobs(jsc);
         for(String key: jobs.keySet()) {
             try {
                 JobWithDetails job = jobs.get(key).details();
@@ -78,9 +87,8 @@ public class TopMenuExtension implements TopMenu {
         publishTemplate.merge(velocityContext, xml);
         String publishJobConfig = xml.toString();
 
-        JenkinsManager.createJob(jsc, "group_repo_verify", verifyJobConfig);
-        JenkinsManager.createJob(jsc, "group_repo_publish", publishJobConfig);
-
+        JenkinsProvider.createJob(jsc, "group_repo_verify", verifyJobConfig);
+        JenkinsProvider.createJob(jsc, "group_repo_publish", publishJobConfig);
         return menuEntries;
     }
 }

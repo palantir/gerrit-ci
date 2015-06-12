@@ -1,15 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <module rename-to="settings">
-
-    <!-- Inherit the core Web Toolkit stuff. -->
+    <!-- Module inherits -->
     <inherits name="com.google.gwt.user.User" />
-
-    <!-- Other module inherits -->
     <inherits name="com.google.gerrit.Plugin" />
     <inherits name="com.google.gwt.http.HTTP" />
 
-    <!-- Specify the app entry point class. -->
+    <!-- Specify the entry point class -->
     <entry-point class="com.palantir.gerrit.gerritci.ui.client.PluginSettingsScreen" />
-
-    <!-- <stylesheet src="hello.css"/> -->
 </module>

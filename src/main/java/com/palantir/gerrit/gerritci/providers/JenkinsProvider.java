@@ -1,4 +1,4 @@
-package com.palantir.gerrit.gerritci.managers;
+package com.palantir.gerrit.gerritci.providers;
 
 import java.io.IOException;
 import java.util.Map;
@@ -13,9 +13,10 @@ import com.palantir.gerrit.gerritci.models.JenkinsServerConfiguration;
  * with user-friendly error messages. All methods in this class are static. This class is not
  * meant to be instantiated.
  */
-public class JenkinsManager {
+public class JenkinsProvider {
+
     // Suppress default constructor for noninstantiability
-    private JenkinsManager() {}
+    private JenkinsProvider() {}
 
     // Returns a new JenkinsServer instance based off of the provided server configuration
     private static JenkinsServer getJenkinsServer(JenkinsServerConfiguration jsc) {
