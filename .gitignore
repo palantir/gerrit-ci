@@ -68,3 +68,6 @@ local.properties
 # TeXlipse plugin
 .texlipse
 
+
+### Velocity ###
+velocity.log*
