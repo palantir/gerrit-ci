@@ -1,6 +1,6 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <project>
-    <description>Verify build created by Gerrit-CI plugin for project: TODO</description>
+    <description>Publish build created by Gerrit-CI plugin for project: TODO</description>
 
     <actions />
     <properties />
@@ -10,7 +10,7 @@
     <keepDependencies>false</keepDependencies>
     <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
     <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
-    <concurrentBuild>true</concurrentBuild>
+    <concurrentBuild>false</concurrentBuild>
 
     <scm class="hudson.plugins.git.GitSCM" plugin="git@1.4.0">
         <configVersion>2</configVersion>
@@ -18,14 +18,14 @@
         <userRemoteConfigs>
             <hudson.plugins.git.UserRemoteConfig>
                 <name>origin</name>
-                <refspec>+$GERRIT_REFSPEC:refs/heads/gerrit</refspec>
+                <refspec></refspec>
                 <url>TODO</url>
             </hudson.plugins.git.UserRemoteConfig>
         </userRemoteConfigs>
 
         <branches>
             <hudson.plugins.git.BranchSpec>
-                <name>$GERRIT_PATCHSET_REVISION</name>
+                <name>TODO</name>
             </hudson.plugins.git.BranchSpec>
         </branches>
 
@@ -79,8 +79,8 @@
             <triggerInformationAction />
 
             <triggerOnEvents>
-                <com.sonyericsson.hudson.plugins.gerrit.trigger.hudsontrigger.events.PluginPatchsetCreatedEvent />
-                <com.sonyericsson.hudson.plugins.gerrit.trigger.hudsontrigger.events.PluginDraftPublishedEvent />
+                <com.sonyericsson.hudson.plugins.gerrit.trigger.hudsontrigger.events.PluginChangeMergedEvent />
+                <com.sonyericsson.hudson.plugins.gerrit.trigger.hudsontrigger.events.PluginRefUpdatedEvent />
             </triggerOnEvents>
 
             <gerritProjects>

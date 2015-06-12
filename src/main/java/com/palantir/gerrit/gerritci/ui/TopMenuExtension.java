@@ -20,6 +20,7 @@ import com.google.gerrit.extensions.webui.TopMenu;
 import com.google.inject.Inject;
 import com.offbytwo.jenkins.model.Job;
 import com.offbytwo.jenkins.model.JobWithDetails;
+import com.palantir.gerrit.gerritci.constants.JobType;
 import com.palantir.gerrit.gerritci.managers.JenkinsManager;
 import com.palantir.gerrit.gerritci.managers.VelocityProvider;
 import com.palantir.gerrit.gerritci.models.JenkinsServerConfiguration;
@@ -59,19 +60,26 @@ public class TopMenuExtension implements TopMenu {
             }
         }
 
-        VelocityProvider velocityManager = new VelocityProvider();
+        VelocityProvider velocityProvider = new VelocityProvider();
 
-        VelocityContext velocityContext = velocityManager.getVelocityContext();
+        VelocityContext velocityContext = velocityProvider.getVelocityContext();
         velocityContext.put("stuff", "stuff");
 
-        Template template =
-            velocityManager.getVelocityEngine().getTemplate("/jenkins-verify-job.vm");
+        Template verifyTemplate =
+            velocityProvider.getVelocityEngine().getTemplate(JobType.VERIFY.getTemplate());
+        Template publishTemplate =
+            velocityProvider.getVelocityEngine().getTemplate(JobType.PUBLISH.getTemplate());
 
         StringWriter xml = new StringWriter();
-        template.merge(velocityContext, xml);
-        String jobConfig = xml.toString();
+        verifyTemplate.merge(velocityContext, xml);
+        String verifyJobConfig = xml.toString();
 
-        JenkinsManager.createJob(jsc, "test-job", jobConfig);
+        xml = new StringWriter();
+        publishTemplate.merge(velocityContext, xml);
+        String publishJobConfig = xml.toString();
+
+        JenkinsManager.createJob(jsc, "group_repo_verify", verifyJobConfig);
+        JenkinsManager.createJob(jsc, "group_repo_publish", publishJobConfig);
 
         return menuEntries;
     }
