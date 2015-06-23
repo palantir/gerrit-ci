@@ -5,7 +5,7 @@ import java.util.List;
 
 import com.google.common.collect.Lists;
 import com.google.gerrit.extensions.annotations.PluginName;
-import com.google.gerrit.extensions.webui.GerritTopMenu;
+import com.google.gerrit.extensions.client.GerritTopMenu;
 import com.google.gerrit.extensions.webui.TopMenu;
 import com.google.inject.Inject;
 
@@ -27,7 +27,8 @@ public class TopMenuExtension implements TopMenu {
          * entry in the top menu with whatever MenuItems we add
          */
         menuEntries.add(new MenuEntry(GerritTopMenu.PROJECTS,
-            Collections.singletonList(new MenuItem("Gerrit-CI", "#/x/" + name + "/settings"))));
+            Collections.singletonList(new MenuItem("Gerrit-CI", "#/x/" + name
+                + "/projects/${projectName}"))));
     }
 
     @Override

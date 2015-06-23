@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<module rename-to="projects">
+    <!-- Module inherits -->
+    <inherits name="com.google.gwt.user.User" />
+    <inherits name="com.google.gerrit.Plugin" />
+    <inherits name="com.google.gwt.http.HTTP" />
+
+    <!-- Specify the entry point class -->
+    <entry-point class="com.palantir.gerrit.gerritci.ui.client.ProjectSettingsScreen" />
+</module>

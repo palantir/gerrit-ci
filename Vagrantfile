@@ -28,9 +28,9 @@ Vagrant.configure(2) do |config|
     sudo yum -y install java-1.7.0-openjdk
 
     # Install Gerrit
-    curl -L -O http://gerrit-releases.storage.googleapis.com/gerrit-2.10.4.war
+    curl -L -O http://gerrit-releases.storage.googleapis.com/gerrit-2.11.1.war
     mkdir gerrit
-    java -jar gerrit-2.10.4.war init -d gerrit --batch
+    java -jar gerrit-2.11.1.war init -d gerrit --batch
 
     # Configure and run Gerrit
     git config -f gerrit/etc/gerrit.config auth.type DEVELOPMENT_BECOME_ANY_ACCOUNT
