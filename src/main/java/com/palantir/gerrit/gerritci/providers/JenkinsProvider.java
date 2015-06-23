@@ -1,10 +1,15 @@
 package com.palantir.gerrit.gerritci.providers;
 
 import java.io.IOException;
+import java.io.StringWriter;
 import java.util.Map;
+
+import org.apache.velocity.Template;
+import org.apache.velocity.VelocityContext;
 
 import com.offbytwo.jenkins.JenkinsServer;
 import com.offbytwo.jenkins.model.Job;
+import com.palantir.gerrit.gerritci.constants.JobType;
 import com.palantir.gerrit.gerritci.models.JenkinsServerConfiguration;
 
 /**
@@ -42,17 +47,17 @@ public class JenkinsProvider {
      * Gets the XML configuration for a Jenkins job.
      *
      * @param jsc The Jenkins server for which we are querying the job XML.
-     * @param jobName The name of the job to get the XML for.
+     * @param name The name of the job to get the XML for.
      * @return The XML configuration for the specified Jenkins job.
      * @throws RuntimeException if the get operation failed.
      */
-    public static String getJobXml(JenkinsServerConfiguration jsc, String jobName) {
+    public static String getJobXml(JenkinsServerConfiguration jsc, String name) {
         JenkinsServer server = getJenkinsServer(jsc);
         try {
-            return server.getJobXml(jobName);
+            return server.getJobXml(name);
         } catch(IOException e) {
             throw new RuntimeException(String.format(
-                "Error getting job XML from Jenkins for job: %s", jobName), e);
+                "Error getting job XML from Jenkins for job: %s", name), e);
         }
     }
 
@@ -60,32 +65,42 @@ public class JenkinsProvider {
      * Creates a new job on the specified Jenkins server with the specified name and configuration.
      *
      * @param jsc The Jenkins server to add the new job to.
-     * @param jobName The name of the job to add.
-     * @param jobXml The configuration XML for the new job.
+     * @param name The name of the job to add.
+     * @param type The JobType of the job to add.
+     * @param params The configuration parameters for the new job.
      * @throws IllegalArgumentException if the job already exists on the server.
      * @throws RuntimeException if the job wasn't created for other reasons.
      */
-    public static void createJob(JenkinsServerConfiguration jsc, String jobName, String jobXml) {
+    public static void createJob(JenkinsServerConfiguration jsc, String name, JobType type,
+        Map<String, String> params) {
         JenkinsServer server = getJenkinsServer(jsc);
 
         Job job = null;
         try {
-            job = server.getJob(jobName);
+            job = server.getJob(name);
         } catch(IOException e) {
             throw new RuntimeException(String.format("Failed to test if Jenkins job: %s exists",
-                jobName), e);
+                name), e);
         }
 
         if(job != null) {
             throw new IllegalArgumentException(String.format("Job %s already exists on the server",
-                jobName));
+                name));
         }
 
+        VelocityProvider velocityProvider = new VelocityProvider();
+        VelocityContext velocityContext = velocityProvider.getVelocityContext(params);
+
+        Template template = velocityProvider.getVelocityEngine().getTemplate(type.getTemplate());
+
+        StringWriter xml = new StringWriter();
+        template.merge(velocityContext, xml);
+        String jobXml = xml.toString();
+
         try {
-            server.createJob(jobName, jobXml);
+            server.createJob(name, jobXml);
         } catch(IOException e) {
-            throw new RuntimeException(String.format("Failed to create Jenkins job: %s", jobName),
-                e);
+            throw new RuntimeException(String.format("Failed to create Jenkins job: %s", name), e);
         }
     }
 }

@@ -1,6 +1,7 @@
 package com.palantir.gerrit.gerritci.providers;
 
 import java.io.File;
+import java.util.Map;
 
 import org.apache.velocity.VelocityContext;
 import org.apache.velocity.app.VelocityEngine;
@@ -43,5 +44,9 @@ public class VelocityProvider {
 
     public VelocityContext getVelocityContext() {
         return new VelocityContext();
+    }
+
+    public VelocityContext getVelocityContext(Map<String, String> params) {
+        return new VelocityContext(params);
     }
 }
