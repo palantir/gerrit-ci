@@ -4,6 +4,7 @@
     <inherits name="com.google.gwt.user.User" />
     <inherits name="com.google.gerrit.Plugin" />
     <inherits name="com.google.gwt.http.HTTP" />
+    <inherits name="com.google.gwt.json.JSON" />
 
     <!-- Specify the entry point class -->
     <entry-point class="com.palantir.gerrit.gerritci.ui.client.ProjectSettingsScreen" />

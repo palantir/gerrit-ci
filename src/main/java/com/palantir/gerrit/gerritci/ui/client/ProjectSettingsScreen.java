@@ -1,12 +1,19 @@
 package com.palantir.gerrit.gerritci.ui.client;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import com.google.gerrit.plugin.client.Plugin;
 import com.google.gerrit.plugin.client.PluginEntryPoint;
+import com.google.gerrit.plugin.client.rpc.RestApi;
 import com.google.gerrit.plugin.client.screen.Screen;
+import com.google.gwt.core.client.JavaScriptObject;
 import com.google.gwt.dom.client.Style.Unit;
 import com.google.gwt.event.dom.client.ClickEvent;
 import com.google.gwt.event.dom.client.ClickHandler;
 import com.google.gwt.user.client.History;
+import com.google.gwt.user.client.rpc.AsyncCallback;
+import com.google.gwt.user.client.ui.Button;
 import com.google.gwt.user.client.ui.CheckBox;
 import com.google.gwt.user.client.ui.InlineLabel;
 import com.google.gwt.user.client.ui.TextBox;
@@ -17,6 +24,11 @@ import com.google.gwt.user.client.ui.VerticalPanel;
  * permissions.
  */
 public class ProjectSettingsScreen extends PluginEntryPoint {
+
+    /**
+     * The name of the currently-selected project
+     */
+    private String projectName;
 
     /**
      * Main panel into which we will place all other panels and widgets for this screen
@@ -53,6 +65,11 @@ public class ProjectSettingsScreen extends PluginEntryPoint {
      */
     private TextBox publishBranchRegex;
 
+    /**
+     * Button that saves the project configuration and creates the jobs
+     */
+    private Button saveButton;
+
     @Override
     public void onPluginLoad() {
 
@@ -68,7 +85,7 @@ public class ProjectSettingsScreen extends PluginEntryPoint {
                  * History.getToken() returns the current page's URL, which we can parse to get the
                  * current project's name.
                  */
-                String projectName = History.getToken().replace("/x/gerrit-ci/projects/", "");
+                projectName = History.getToken().replace("/x/gerrit-ci/projects/", "");
 
                 // Instantiate widgets
                 verticalPanel = new VerticalPanel();
@@ -78,6 +95,7 @@ public class ProjectSettingsScreen extends PluginEntryPoint {
                 verifyBranchRegex = new TextBox();
                 publishJobEnabled = new CheckBox("Disabled");
                 publishBranchRegex = new TextBox();
+                saveButton = new Button("Save");
 
                 // header
                 header.getElement().getStyle().setFontSize(20, Unit.PX);
@@ -125,6 +143,32 @@ public class ProjectSettingsScreen extends PluginEntryPoint {
                 // publishBranchRegex
                 publishBranchRegex.setText("refs/heads/(develop|master)");
 
+                // saveButton
+                saveButton.addClickHandler(new ClickHandler() {
+
+                    @Override
+                    public void onClick(ClickEvent event) {
+                        Map<String, String> params = new HashMap<String, String>();
+                        params.put("projectName", projectName);
+                        params.put("verifyBranchRegex", verifyBranchRegex.getText());
+                        params.put("publishBranchRegex", publishBranchRegex.getText());
+
+                        new RestApi("plugins").id("gerrit-ci").view("jobs").post(
+                            (JavaScriptObject) params, new AsyncCallback<JavaScriptObject>() {
+
+                                @Override
+                                public void onFailure(Throwable caught) {
+                                    // TODO: Handle this situation
+                                }
+
+                                @Override
+                                public void onSuccess(JavaScriptObject result) {
+                                    // TODO: Handle this situation
+                                }
+                            });
+                    }
+                });
+
                 updateWidgetEnablity();
 
                 // Add all widgets to the main VerticalPanel
@@ -134,6 +178,7 @@ public class ProjectSettingsScreen extends PluginEntryPoint {
                 verticalPanel.add(verifyBranchRegex);
                 verticalPanel.add(publishJobEnabled);
                 verticalPanel.add(publishBranchRegex);
+                verticalPanel.add(saveButton);
 
                 screen.add(verticalPanel);
                 screen.show();

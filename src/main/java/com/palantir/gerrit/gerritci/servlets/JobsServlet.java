@@ -3,7 +3,9 @@ package com.palantir.gerrit.gerritci.servlets;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.HashMap;
 import java.util.Map;
+import java.util.Map.Entry;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -13,11 +15,14 @@ import javax.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.collect.ImmutableMap;
+import com.google.common.io.CharStreams;
 import com.google.gerrit.reviewdb.client.Project.NameKey;
 import com.google.gerrit.server.CurrentUser;
 import com.google.gerrit.server.project.NoSuchProjectException;
 import com.google.gerrit.server.project.ProjectControl;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import com.palantir.gerrit.gerritci.constants.JobType;
@@ -71,16 +76,44 @@ public class JobsServlet extends HttpServlet {
             return;
         }
 
+        /*
+         * The actual parameters we send are encoded into a JSON object such that they are contained
+         * in an object under the entry "f". The other top-level keys seem to be useless. In
+         * addition, each key in the parameters object has ":" prefixed to whatever it is the key is
+         * actually named. Thus, by stripping the first character away from each key, we arrive at a
+         * sane JSONObject of request parameters.
+         * Example: {"b": [], "f": {":projectName": "name", ":verifyBranchRegex": * ".*"}}
+         */
+        JsonObject requestBody =
+            (JsonObject) (new JsonParser()).parse(CharStreams.toString(req.getReader()));
+        requestBody = requestBody.get("f").getAsJsonObject();
+
+        JsonObject requestParams = new JsonObject();
+        for(Entry<String, JsonElement> e: requestBody.entrySet()) {
+            requestParams.add(e.getKey().substring(1), e.getValue());
+        }
+
+        Map<String, String> params = new HashMap<String, String>();
+
+        if(!requestParams.has("projectName")) {
+            res.setStatus(400);
+            return;
+        }
+        String projectName = requestParams.get("projectName").getAsString();
+        params.put("projectName", projectName);
+
         // TODO: Replace this with the request body
         JenkinsServerConfiguration jsc = new JenkinsServerConfiguration();
         try {
             jsc.setUri(new URI("http://localhost:8000"));
         } catch(URISyntaxException e) {}
-        Map<String, String> params = ImmutableMap.of("stuff", "stuff");
+
+        String verifyJobName = String.format("%s_verify", projectName.replace('/', '_'));
+        String publishJobName = String.format("%s_publish", projectName.replace('/', '_'));
 
         try {
-            JenkinsProvider.createJob(jsc, "group_repo_verify", JobType.VERIFY, params);
-            JenkinsProvider.createJob(jsc, "group_repo_publish", JobType.PUBLISH, params);
+            JenkinsProvider.createJob(jsc, verifyJobName, JobType.VERIFY, params);
+            JenkinsProvider.createJob(jsc, publishJobName, JobType.PUBLISH, params);
         } catch(IllegalArgumentException e) {
             logger.error("Jobs already exist on Jenkins", e);
             res.setStatus(500);
@@ -88,7 +121,7 @@ public class JobsServlet extends HttpServlet {
         }
 
         res.setStatus(200);
-        res.setContentType("test/plain");
+        res.setContentType("text/plain");
         res.setCharacterEncoding("UTF-8");
         res.getWriter().write(String.format("Created jobs!"));
     }
