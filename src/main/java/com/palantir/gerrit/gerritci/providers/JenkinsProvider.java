@@ -62,31 +62,34 @@ public class JenkinsProvider {
     }
 
     /**
-     * Creates a new job on the specified Jenkins server with the specified name and configuration.
+     * Queries the specified Jenkins server to see if the specified job exists.
+     *
+     * @param jsc The Jenkins server which we are querying.
+     * @param name The name of the job to check.
+     * @return Whether or not the job exists on the specified server.
+     */
+    public static boolean jobExists(JenkinsServerConfiguration jsc, String name) {
+        JenkinsServer server = getJenkinsServer(jsc);
+        try {
+            return server.getJob(name) != null;
+        } catch(IOException e) {
+            throw new RuntimeException("Error checking for job from Jenkins", e);
+        }
+    }
+
+    /**
+     * Creates a new job on the specified Jenkins server with the specified name and configuration,
+     * or updates the job with the specified name if it already exists on the server.
      *
      * @param jsc The Jenkins server to add the new job to.
      * @param name The name of the job to add.
      * @param type The JobType of the job to add.
      * @param params The configuration parameters for the new job.
-     * @throws IllegalArgumentException if the job already exists on the server.
      * @throws RuntimeException if the job wasn't created for other reasons.
      */
-    public static void createJob(JenkinsServerConfiguration jsc, String name, JobType type,
+    public static void createOrUpdateJob(JenkinsServerConfiguration jsc, String name, JobType type,
         Map<String, String> params) {
         JenkinsServer server = getJenkinsServer(jsc);
-
-        Job job = null;
-        try {
-            job = server.getJob(name);
-        } catch(IOException e) {
-            throw new RuntimeException(String.format("Failed to test if Jenkins job: %s exists",
-                name), e);
-        }
-
-        if(job != null) {
-            throw new IllegalArgumentException(String.format("Job %s already exists on the server",
-                name));
-        }
 
         VelocityProvider velocityProvider = new VelocityProvider();
         VelocityContext velocityContext = velocityProvider.getVelocityContext(params);
@@ -97,10 +100,41 @@ public class JenkinsProvider {
         template.merge(velocityContext, xml);
         String jobXml = xml.toString();
 
+        if(jobExists(jsc, name)) {
+            try {
+                server.updateJob(name, jobXml);
+            } catch(IOException e) {
+                throw new RuntimeException(String.format("Failed to update Jenkins job: %s", name),
+                    e);
+            }
+        } else {
+            try {
+                server.createJob(name, jobXml);
+            } catch(IOException e) {
+                throw new RuntimeException(String.format("Failed to create Jenkins job: %s", name),
+                    e);
+            }
+        }
+    }
+
+    /**
+     * Deletes the specified job from the specified Jenkins server.
+     *
+     * @param jsc The Jenkins server to delete the job from.
+     * @param name The name of the job to delete.
+     */
+    public static void deleteJob(JenkinsServerConfiguration jsc, String name) {
+        JenkinsServer server = getJenkinsServer(jsc);
+
+        // If the job doesn't exist, there is nothing left to do
+        if(!jobExists(jsc, name)) {
+            return;
+        }
+
         try {
-            server.createJob(name, jobXml);
+            server.deleteJob(name);
         } catch(IOException e) {
-            throw new RuntimeException(String.format("Failed to create Jenkins job: %s", name), e);
+            throw new RuntimeException(String.format("Error deleting job %s from Jenkins", name), e);
         }
     }
 }

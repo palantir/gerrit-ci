@@ -112,8 +112,8 @@ public class JobsServlet extends HttpServlet {
         String publishJobName = String.format("%s_publish", projectName.replace('/', '_'));
 
         try {
-            JenkinsProvider.createJob(jsc, verifyJobName, JobType.VERIFY, params);
-            JenkinsProvider.createJob(jsc, publishJobName, JobType.PUBLISH, params);
+            JenkinsProvider.createOrUpdateJob(jsc, verifyJobName, JobType.VERIFY, params);
+            JenkinsProvider.createOrUpdateJob(jsc, publishJobName, JobType.PUBLISH, params);
         } catch(IllegalArgumentException e) {
             logger.error("Jobs already exist on Jenkins", e);
             res.setStatus(500);
