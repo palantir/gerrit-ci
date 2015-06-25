@@ -88,7 +88,7 @@ public class JenkinsProvider {
      * @throws RuntimeException if the job wasn't created for other reasons.
      */
     public static void createOrUpdateJob(JenkinsServerConfiguration jsc, String name, JobType type,
-        Map<String, String> params) {
+        Map<String, Object> params) {
         JenkinsServer server = getJenkinsServer(jsc);
 
         VelocityProvider velocityProvider = new VelocityProvider();

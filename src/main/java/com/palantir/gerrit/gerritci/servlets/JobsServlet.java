@@ -93,7 +93,7 @@ public class JobsServlet extends HttpServlet {
             requestParams.add(e.getKey().substring(1), e.getValue());
         }
 
-        Map<String, String> params = new HashMap<String, String>();
+        Map<String, Object> params = new HashMap<String, Object>();
 
         // projectName
         if(!requestParams.has("projectName")) {
@@ -140,6 +140,22 @@ public class JobsServlet extends HttpServlet {
             return;
         }
         params.put("publishBranchRegex", requestParams.get("publishBranchRegex").getAsString());
+
+        // timeoutEnabled
+        if(!requestParams.has("timeoutEnabled")) {
+            res.setStatus(400);
+            return;
+        }
+        params.put("timeoutEnabled",
+            requestParams.get("timeoutEnabled").getAsJsonObject().get("b").getAsBoolean());
+
+        // timeoutMinutes
+        if(!requestParams.has("timeoutMinutes")) {
+            res.setStatus(400);
+            return;
+        }
+        params.put("timeoutMinutes",
+            requestParams.get("timeoutMinutes").getAsJsonObject().get("b").getAsInt());
 
         // TODO: Replace this with the request body
         JenkinsServerConfiguration jsc = new JenkinsServerConfiguration();

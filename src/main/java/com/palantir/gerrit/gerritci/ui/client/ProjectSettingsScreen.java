@@ -66,6 +66,16 @@ public class ProjectSettingsScreen extends PluginEntryPoint {
     private TextBox publishBranchRegex;
 
     /**
+     * CheckBox that will enable or disable timeouts for jobs
+     */
+    private CheckBox timeoutEnabled;
+
+    /**
+     * TextBox that contains the number of minutes to wait for the timeout
+     */
+    private TextBox timeoutMinutes;
+
+    /**
      * Button that saves the project configuration and creates the jobs
      */
     private Button saveButton;
@@ -95,6 +105,8 @@ public class ProjectSettingsScreen extends PluginEntryPoint {
                 verifyBranchRegex = new TextBox();
                 publishJobEnabled = new CheckBox("Disabled");
                 publishBranchRegex = new TextBox();
+                timeoutEnabled = new CheckBox("Disabled");
+                timeoutMinutes = new TextBox();
                 saveButton = new Button("Save");
 
                 // header
@@ -143,6 +155,21 @@ public class ProjectSettingsScreen extends PluginEntryPoint {
                 // publishBranchRegex
                 publishBranchRegex.setText("refs/heads/(develop|master)");
 
+                // timeoutEnabled
+                timeoutEnabled.setValue(false);
+                timeoutEnabled.addClickHandler(new ClickHandler() {
+
+                    @Override
+                    public void onClick(ClickEvent event) {
+                        boolean isEnabled = timeoutEnabled.getValue();
+                        timeoutEnabled.setText(isEnabled ? "Enabled" : "Disabled");
+                        updateWidgetEnablity();
+                    }
+                });
+
+                // timeoutMinutes
+                timeoutMinutes.setText("15");
+
                 // saveButton
                 saveButton.addClickHandler(new ClickHandler() {
 
@@ -155,6 +182,8 @@ public class ProjectSettingsScreen extends PluginEntryPoint {
                         params.put("verifyBranchRegex", verifyBranchRegex.getText());
                         params.put("publishJobEnabled", publishJobEnabled.getValue());
                         params.put("publishBranchRegex", publishBranchRegex.getText());
+                        params.put("timeoutEnabled", timeoutEnabled.getValue());
+                        params.put("timeoutMinutes", Integer.valueOf(timeoutMinutes.getText()));
 
                         new RestApi("plugins").id("gerrit-ci").view("jobs").post(
                             (JavaScriptObject) params, new AsyncCallback<JavaScriptObject>() {
@@ -181,6 +210,8 @@ public class ProjectSettingsScreen extends PluginEntryPoint {
                 verticalPanel.add(verifyBranchRegex);
                 verticalPanel.add(publishJobEnabled);
                 verticalPanel.add(publishBranchRegex);
+                verticalPanel.add(timeoutEnabled);
+                verticalPanel.add(timeoutMinutes);
                 verticalPanel.add(saveButton);
 
                 screen.add(verticalPanel);
@@ -198,14 +229,18 @@ public class ProjectSettingsScreen extends PluginEntryPoint {
         if(jobsEnabled.getValue()) {
             verifyJobEnabled.setEnabled(true);
             publishJobEnabled.setEnabled(true);
+            timeoutEnabled.setEnabled(true);
 
             verifyBranchRegex.setEnabled(verifyJobEnabled.getValue());
             publishBranchRegex.setEnabled(publishJobEnabled.getValue());
+            timeoutMinutes.setEnabled(timeoutEnabled.getValue());
         } else {
             verifyJobEnabled.setEnabled(false);
             verifyBranchRegex.setEnabled(false);
             publishJobEnabled.setEnabled(false);
             publishBranchRegex.setEnabled(false);
+            timeoutEnabled.setEnabled(false);
+            timeoutMinutes.setEnabled(false);
         }
     }
 }

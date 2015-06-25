@@ -46,7 +46,7 @@ public class VelocityProvider {
         return new VelocityContext();
     }
 
-    public VelocityContext getVelocityContext(Map<String, String> params) {
+    public VelocityContext getVelocityContext(Map<String, Object> params) {
         return new VelocityContext(params);
     }
 }
