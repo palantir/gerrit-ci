@@ -1,6 +1,6 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <project>
-    <description>Verify build created by Gerrit-CI plugin for project: TODO</description>
+    <description>Verify build created by Gerrit-CI plugin for project: $projectName</description>
 
     <actions />
     <properties />
@@ -89,8 +89,8 @@
                     <pattern>TODO</pattern>
                     <branches>
                         <com.sonyericsson.hudson.plugins.gerrit.trigger.hudsontrigger.data.Branch>
-                            <compareType>ANT</compareType>
-                            <pattern>TODO</pattern>
+                            <compareType>REG_EXP</compareType>
+                            <pattern>$verifyBranchRegex</pattern>
                         </com.sonyericsson.hudson.plugins.gerrit.trigger.hudsontrigger.data.Branch>
                     </branches>
                 </com.sonyericsson.hudson.plugins.gerrit.trigger.hudsontrigger.data.GerritProject>

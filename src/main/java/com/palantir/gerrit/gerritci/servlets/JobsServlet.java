@@ -95,12 +95,51 @@ public class JobsServlet extends HttpServlet {
 
         Map<String, String> params = new HashMap<String, String>();
 
+        // projectName
         if(!requestParams.has("projectName")) {
             res.setStatus(400);
             return;
         }
         String projectName = requestParams.get("projectName").getAsString();
         params.put("projectName", projectName);
+
+        // jobsEnabled
+        if(!requestParams.has("jobsEnabled")) {
+            res.setStatus(400);
+            return;
+        }
+        boolean jobsEnabled =
+            requestParams.get("jobsEnabled").getAsJsonObject().get("b").getAsBoolean();
+
+        // verifyJobEnabled
+        if(!requestParams.has("verifyJobEnabled")) {
+            res.setStatus(400);
+            return;
+        }
+        boolean verifyJobEnabled =
+            requestParams.get("verifyJobEnabled").getAsJsonObject().get("b").getAsBoolean();
+
+        // verifyBranchRegex
+        if(!requestParams.has("verifyBranchRegex")) {
+            res.setStatus(400);
+            return;
+        }
+        params.put("verifyBranchRegex", requestParams.get("verifyBranchRegex").getAsString());
+
+        // publishJobEnabled
+        if(!requestParams.has("publishJobEnabled")) {
+            res.setStatus(400);
+            return;
+        }
+        boolean publishJobEnabled =
+            requestParams.get("publishJobEnabled").getAsJsonObject().get("b").getAsBoolean();
+
+        // publishBranchRegex
+        if(!requestParams.has("publishBranchRegex")) {
+            res.setStatus(400);
+            return;
+        }
+        params.put("publishBranchRegex", requestParams.get("publishBranchRegex").getAsString());
 
         // TODO: Replace this with the request body
         JenkinsServerConfiguration jsc = new JenkinsServerConfiguration();
@@ -111,13 +150,21 @@ public class JobsServlet extends HttpServlet {
         String verifyJobName = String.format("%s_verify", projectName.replace('/', '_'));
         String publishJobName = String.format("%s_publish", projectName.replace('/', '_'));
 
-        try {
+        if(!jobsEnabled) {
+            verifyJobEnabled = false;
+            publishJobEnabled = false;
+        }
+
+        if(verifyJobEnabled) {
             JenkinsProvider.createOrUpdateJob(jsc, verifyJobName, JobType.VERIFY, params);
+        } else {
+            JenkinsProvider.deleteJob(jsc, verifyJobName);
+        }
+
+        if(publishJobEnabled) {
             JenkinsProvider.createOrUpdateJob(jsc, publishJobName, JobType.PUBLISH, params);
-        } catch(IllegalArgumentException e) {
-            logger.error("Jobs already exist on Jenkins", e);
-            res.setStatus(500);
-            return;
+        } else {
+            JenkinsProvider.deleteJob(jsc, publishJobName);
         }
 
         res.setStatus(200);

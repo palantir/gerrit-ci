@@ -148,9 +148,12 @@ public class ProjectSettingsScreen extends PluginEntryPoint {
 
                     @Override
                     public void onClick(ClickEvent event) {
-                        Map<String, String> params = new HashMap<String, String>();
+                        Map<String, Object> params = new HashMap<String, Object>();
                         params.put("projectName", projectName);
+                        params.put("jobsEnabled", jobsEnabled.getValue());
+                        params.put("verifyJobEnabled", verifyJobEnabled.getValue());
                         params.put("verifyBranchRegex", verifyBranchRegex.getText());
+                        params.put("publishJobEnabled", publishJobEnabled.getValue());
                         params.put("publishBranchRegex", publishBranchRegex.getText());
 
                         new RestApi("plugins").id("gerrit-ci").view("jobs").post(
