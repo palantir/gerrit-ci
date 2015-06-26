@@ -18,14 +18,13 @@
         <userRemoteConfigs>
             <hudson.plugins.git.UserRemoteConfig>
                 <name>origin</name>
-                <refspec></refspec>
-                <url>TODO</url>
+                <url>ssh://jenkins@localhost:29418/${projectName}.git</url>
             </hudson.plugins.git.UserRemoteConfig>
         </userRemoteConfigs>
 
         <branches>
             <hudson.plugins.git.BranchSpec>
-                <name>TODO</name>
+                <name>:$publishBranchRegex</name>
             </hudson.plugins.git.BranchSpec>
         </branches>
 
@@ -86,7 +85,7 @@
             <gerritProjects>
                 <com.sonyericsson.hudson.plugins.gerrit.trigger.hudsontrigger.data.GerritProject>
                     <compareType>PLAIN</compareType>
-                    <pattern>TODO</pattern>
+                    <pattern>$projectName</pattern>
                     <branches>
                         <com.sonyericsson.hudson.plugins.gerrit.trigger.hudsontrigger.data.Branch>
                             <compareType>REG_EXP</compareType>
@@ -107,7 +106,17 @@
 
     <builders>
         <hudson.tasks.Shell>
-            <command>TODO</command>
+            <command>
+#!/bin/bash
+set -x
+set -e
+date
+
+git reset --hard
+git clean -fdx
+
+./scripts/publish.sh
+            </command>
         </hudson.tasks.Shell>
     </builders>
 

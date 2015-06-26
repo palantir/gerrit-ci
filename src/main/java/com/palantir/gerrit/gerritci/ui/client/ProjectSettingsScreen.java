@@ -90,7 +90,8 @@ public class ProjectSettingsScreen extends PluginEntryPoint {
                  * History.getToken() returns the current page's URL, which we can parse to get the
                  * current project's name.
                  */
-                projectName = History.getToken().replace("/x/gerrit-ci/projects/", "");
+                final String encodedProjectName = History.getToken().replace("/x/gerrit-ci/projects/", "");
+                projectName = encodedProjectName.replace("%2F", "/");
 
                 // Instantiate widgets
                 verticalPanel = new VerticalPanel();
@@ -165,7 +166,7 @@ public class ProjectSettingsScreen extends PluginEntryPoint {
                         params.put("timeoutEnabled", timeoutEnabled.getValue());
                         params.put("timeoutMinutes", Integer.valueOf(timeoutMinutes.getText()));
 
-                        new RestApi("plugins").id("gerrit-ci").view("jobs").view(projectName)
+                        new RestApi("plugins").id("gerrit-ci").view("jobs").view(encodedProjectName)
                             .put((JavaScriptObject) params, new AsyncCallback<JavaScriptObject>() {
 
                                 @Override
@@ -196,7 +197,7 @@ public class ProjectSettingsScreen extends PluginEntryPoint {
                 screen.add(verticalPanel);
                 screen.show();
 
-                new RestApi("plugins").id("gerrit-ci").view("jobs").view(projectName)
+                new RestApi("plugins").id("gerrit-ci").view("jobs").view(encodedProjectName)
                     .get(new AsyncCallback<JavaScriptObject>() {
 
                         @Override

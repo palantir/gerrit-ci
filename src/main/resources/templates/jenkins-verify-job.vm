@@ -19,7 +19,7 @@
             <hudson.plugins.git.UserRemoteConfig>
                 <name>origin</name>
                 <refspec>+$GERRIT_REFSPEC:refs/heads/gerrit</refspec>
-                <url>TODO</url>
+                <url>ssh://jenkins@localhost:29418/${projectName}.git</url>
             </hudson.plugins.git.UserRemoteConfig>
         </userRemoteConfigs>
 
@@ -86,7 +86,7 @@
             <gerritProjects>
                 <com.sonyericsson.hudson.plugins.gerrit.trigger.hudsontrigger.data.GerritProject>
                     <compareType>PLAIN</compareType>
-                    <pattern>TODO</pattern>
+                    <pattern>$projectName</pattern>
                     <branches>
                         <com.sonyericsson.hudson.plugins.gerrit.trigger.hudsontrigger.data.Branch>
                             <compareType>REG_EXP</compareType>
@@ -107,7 +107,17 @@
 
     <builders>
         <hudson.tasks.Shell>
-            <command>TODO</command>
+            <command>
+#!/bin/bash
+set -x
+set -e
+date
+
+git reset --hard
+git clean -fdx
+
+./scripts/verify.sh
+            </command>
         </hudson.tasks.Shell>
     </builders>
 

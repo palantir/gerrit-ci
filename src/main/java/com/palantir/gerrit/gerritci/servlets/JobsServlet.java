@@ -66,8 +66,9 @@ public class JobsServlet extends HttpServlet {
             return;
         }
 
-        String projectName =
+        String encodedProjectName =
             req.getRequestURI().substring(req.getRequestURI().lastIndexOf('/') + 1);
+        String projectName = encodedProjectName.replace("%2F", "/");
 
         // TODO: Replace this with the request body
         JenkinsServerConfiguration jsc = new JenkinsServerConfiguration();
@@ -91,8 +92,9 @@ public class JobsServlet extends HttpServlet {
             return;
         }
 
-        String projectName =
+        String encodedProjectName =
             req.getRequestURI().substring(req.getRequestURI().lastIndexOf('/') + 1);
+        String projectName = encodedProjectName.replace("%2F", "/");
 
         /*
          * The actual parameters we send are encoded into a JSON object such that they are contained
