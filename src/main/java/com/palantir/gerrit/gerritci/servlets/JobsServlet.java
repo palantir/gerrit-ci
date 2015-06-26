@@ -103,14 +103,6 @@ public class JobsServlet extends HttpServlet {
         String projectName = requestParams.get("projectName").getAsString();
         params.put("projectName", projectName);
 
-        // jobsEnabled
-        if(!requestParams.has("jobsEnabled")) {
-            res.setStatus(400);
-            return;
-        }
-        boolean jobsEnabled =
-            requestParams.get("jobsEnabled").getAsJsonObject().get("b").getAsBoolean();
-
         // verifyJobEnabled
         if(!requestParams.has("verifyJobEnabled")) {
             res.setStatus(400);
@@ -165,11 +157,6 @@ public class JobsServlet extends HttpServlet {
 
         String verifyJobName = String.format("%s_verify", projectName.replace('/', '_'));
         String publishJobName = String.format("%s_publish", projectName.replace('/', '_'));
-
-        if(!jobsEnabled) {
-            verifyJobEnabled = false;
-            publishJobEnabled = false;
-        }
 
         if(verifyJobEnabled) {
             JenkinsProvider.createOrUpdateJob(jsc, verifyJobName, JobType.VERIFY, params);

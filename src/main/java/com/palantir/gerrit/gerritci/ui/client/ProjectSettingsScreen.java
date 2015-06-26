@@ -41,11 +41,6 @@ public class ProjectSettingsScreen extends PluginEntryPoint {
     private InlineLabel header;
 
     /**
-     * CheckBox that will enable or disable all types of Jenkins jobs for the current project
-     */
-    private CheckBox jobsEnabled;
-
-    /**
      * CheckBox that will enable or disable verify jobs
      */
     private CheckBox verifyJobEnabled;
@@ -100,7 +95,6 @@ public class ProjectSettingsScreen extends PluginEntryPoint {
                 // Instantiate widgets
                 verticalPanel = new VerticalPanel();
                 header = new InlineLabel("Gerrit-CI Settings for Project: " + projectName);
-                jobsEnabled = new CheckBox("Disabled");
                 verifyJobEnabled = new CheckBox("Disabled");
                 verifyBranchRegex = new TextBox();
                 publishJobEnabled = new CheckBox("Disabled");
@@ -111,19 +105,6 @@ public class ProjectSettingsScreen extends PluginEntryPoint {
 
                 // header
                 header.getElement().getStyle().setFontSize(20, Unit.PX);
-
-                // jobsEnabled
-                jobsEnabled.setValue(false);
-                jobsEnabled.addClickHandler(new ClickHandler() {
-
-                    @Override
-                    public void onClick(ClickEvent event) {
-                        boolean isEnabled = jobsEnabled.getValue();
-
-                        jobsEnabled.setText(isEnabled ? "Enabled" : "Disabled");
-                        updateWidgetEnablity();
-                    }
-                });
 
                 // verifyJobEnabled
                 verifyJobEnabled.setValue(false);
@@ -177,7 +158,6 @@ public class ProjectSettingsScreen extends PluginEntryPoint {
                     public void onClick(ClickEvent event) {
                         Map<String, Object> params = new HashMap<String, Object>();
                         params.put("projectName", projectName);
-                        params.put("jobsEnabled", jobsEnabled.getValue());
                         params.put("verifyJobEnabled", verifyJobEnabled.getValue());
                         params.put("verifyBranchRegex", verifyBranchRegex.getText());
                         params.put("publishJobEnabled", publishJobEnabled.getValue());
@@ -205,7 +185,6 @@ public class ProjectSettingsScreen extends PluginEntryPoint {
 
                 // Add all widgets to the main VerticalPanel
                 verticalPanel.add(header);
-                verticalPanel.add(jobsEnabled);
                 verticalPanel.add(verifyJobEnabled);
                 verticalPanel.add(verifyBranchRegex);
                 verticalPanel.add(publishJobEnabled);
@@ -226,21 +205,9 @@ public class ProjectSettingsScreen extends PluginEntryPoint {
      * widgets based on the change.
      */
     private void updateWidgetEnablity() {
-        if(jobsEnabled.getValue()) {
-            verifyJobEnabled.setEnabled(true);
-            publishJobEnabled.setEnabled(true);
-            timeoutEnabled.setEnabled(true);
-
-            verifyBranchRegex.setEnabled(verifyJobEnabled.getValue());
-            publishBranchRegex.setEnabled(publishJobEnabled.getValue());
-            timeoutMinutes.setEnabled(timeoutEnabled.getValue());
-        } else {
-            verifyJobEnabled.setEnabled(false);
-            verifyBranchRegex.setEnabled(false);
-            publishJobEnabled.setEnabled(false);
-            publishBranchRegex.setEnabled(false);
-            timeoutEnabled.setEnabled(false);
-            timeoutMinutes.setEnabled(false);
-        }
+        verifyBranchRegex.setEnabled(verifyJobEnabled.getValue());
+        publishBranchRegex.setEnabled(publishJobEnabled.getValue());
+        timeoutEnabled.setEnabled(verifyJobEnabled.getValue() || publishJobEnabled.getValue());
+        timeoutMinutes.setEnabled(timeoutEnabled.getValue());
     }
 }
