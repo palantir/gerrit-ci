@@ -28,6 +28,7 @@ import com.google.inject.Singleton;
 import com.palantir.gerrit.gerritci.constants.JobType;
 import com.palantir.gerrit.gerritci.models.JenkinsServerConfiguration;
 import com.palantir.gerrit.gerritci.providers.JenkinsProvider;
+import com.palantir.gerrit.gerritci.util.JenkinsJobParser;
 
 @Singleton
 public class JobsServlet extends HttpServlet {
@@ -65,16 +66,33 @@ public class JobsServlet extends HttpServlet {
             return;
         }
 
-        res.getWriter().write("Hello from GET!");
+        String projectName =
+            req.getRequestURI().substring(req.getRequestURI().lastIndexOf('/') + 1);
+
+        // TODO: Replace this with the request body
+        JenkinsServerConfiguration jsc = new JenkinsServerConfiguration();
+        try {
+            jsc.setUri(new URI("http://localhost:8000"));
+        } catch(URISyntaxException e) {}
+
+        JsonObject params = JenkinsJobParser.parseJenkinsJob(projectName, jsc);
+
+        res.setStatus(200);
+        res.setContentType("application/json");
+        res.setCharacterEncoding("UTF-8");
+        res.getWriter().write(params.toString());
     }
 
     @Override
-    protected void doPost(HttpServletRequest req, HttpServletResponse res) throws ServletException,
+    protected void doPut(HttpServletRequest req, HttpServletResponse res) throws ServletException,
         IOException {
         if(!currentUserCanAccess()) {
             res.setStatus(401);
             return;
         }
+
+        String projectName =
+            req.getRequestURI().substring(req.getRequestURI().lastIndexOf('/') + 1);
 
         /*
          * The actual parameters we send are encoded into a JSON object such that they are contained
@@ -94,13 +112,6 @@ public class JobsServlet extends HttpServlet {
         }
 
         Map<String, Object> params = new HashMap<String, Object>();
-
-        // projectName
-        if(!requestParams.has("projectName")) {
-            res.setStatus(400);
-            return;
-        }
-        String projectName = requestParams.get("projectName").getAsString();
         params.put("projectName", projectName);
 
         // verifyJobEnabled
@@ -138,16 +149,16 @@ public class JobsServlet extends HttpServlet {
             res.setStatus(400);
             return;
         }
-        params.put("timeoutEnabled",
-            requestParams.get("timeoutEnabled").getAsJsonObject().get("b").getAsBoolean());
+        params.put("timeoutEnabled", requestParams.get("timeoutEnabled").getAsJsonObject().get("b")
+            .getAsBoolean());
 
         // timeoutMinutes
         if(!requestParams.has("timeoutMinutes")) {
             res.setStatus(400);
             return;
         }
-        params.put("timeoutMinutes",
-            requestParams.get("timeoutMinutes").getAsJsonObject().get("b").getAsInt());
+        params.put("timeoutMinutes", requestParams.get("timeoutMinutes").getAsJsonObject().get("b")
+            .getAsInt());
 
         // TODO: Replace this with the request body
         JenkinsServerConfiguration jsc = new JenkinsServerConfiguration();
@@ -155,8 +166,8 @@ public class JobsServlet extends HttpServlet {
             jsc.setUri(new URI("http://localhost:8000"));
         } catch(URISyntaxException e) {}
 
-        String verifyJobName = String.format("%s_verify", projectName.replace('/', '_'));
-        String publishJobName = String.format("%s_publish", projectName.replace('/', '_'));
+        String verifyJobName = JobType.VERIFY.getJobName(projectName);
+        String publishJobName = JobType.PUBLISH.getJobName(projectName);
 
         if(verifyJobEnabled) {
             JenkinsProvider.createOrUpdateJob(jsc, verifyJobName, JobType.VERIFY, params);
@@ -172,7 +183,5 @@ public class JobsServlet extends HttpServlet {
 
         res.setStatus(200);
         res.setContentType("text/plain");
-        res.setCharacterEncoding("UTF-8");
-        res.getWriter().write(String.format("Created jobs!"));
     }
 }

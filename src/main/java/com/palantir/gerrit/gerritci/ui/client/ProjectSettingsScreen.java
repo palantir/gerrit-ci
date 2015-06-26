@@ -165,8 +165,8 @@ public class ProjectSettingsScreen extends PluginEntryPoint {
                         params.put("timeoutEnabled", timeoutEnabled.getValue());
                         params.put("timeoutMinutes", Integer.valueOf(timeoutMinutes.getText()));
 
-                        new RestApi("plugins").id("gerrit-ci").view("jobs").post(
-                            (JavaScriptObject) params, new AsyncCallback<JavaScriptObject>() {
+                        new RestApi("plugins").id("gerrit-ci").view("jobs").view(projectName)
+                            .put((JavaScriptObject) params, new AsyncCallback<JavaScriptObject>() {
 
                                 @Override
                                 public void onFailure(Throwable caught) {
@@ -195,6 +195,50 @@ public class ProjectSettingsScreen extends PluginEntryPoint {
 
                 screen.add(verticalPanel);
                 screen.show();
+
+                new RestApi("plugins").id("gerrit-ci").view("jobs").view(projectName)
+                    .get(new AsyncCallback<JavaScriptObject>() {
+
+                        @Override
+                        public void onFailure(Throwable caught) {
+                            // TODO: Handle this situation
+                        }
+
+                        @Override
+                        public void onSuccess(JavaScriptObject result) {
+                            GetJobsResponseOverlay config = (GetJobsResponseOverlay) result;
+
+                            verifyJobEnabled.setValue(config.getVerifyJobEnabled());
+                            verifyJobEnabled.setText(verifyJobEnabled.getValue() ? "Enabled"
+                                : "Disabled");
+
+                            publishJobEnabled.setValue(config.getPublishJobEnabled());
+                            publishJobEnabled.setText(publishJobEnabled.getValue() ? "Enabled"
+                                : "Disabled");
+
+                            timeoutEnabled.setValue(config.getTimeoutEnabled());
+                            timeoutEnabled.setText(timeoutEnabled.getValue() ? "Enabled"
+                                : "Disabled");
+
+                            String verifyBranchRegexString = config.getVerifyBranchRegex();
+                            String publishBranchRegexString = config.getPublishBranchRegex();
+                            Integer timeoutMinutesInteger = config.getTimeoutMinutes();
+
+                            if(verifyBranchRegexString != null) {
+                                verifyBranchRegex.setText(verifyBranchRegexString);
+                            }
+
+                            if(publishBranchRegexString != null) {
+                                publishBranchRegex.setText(publishBranchRegexString);
+                            }
+
+                            if(timeoutMinutesInteger != null) {
+                                timeoutMinutes.setText(String.valueOf(timeoutMinutesInteger));
+                            }
+
+                            updateWidgetEnablity();
+                        }
+                    });
             }
         });
     }

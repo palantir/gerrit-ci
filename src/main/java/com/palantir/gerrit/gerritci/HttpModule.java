@@ -19,7 +19,10 @@ public class HttpModule extends HttpPluginModule {
         // Gerrit-CI project-specific settings page
         DynamicSet.bind(binder(), WebUiPlugin.class).toInstance(new GwtPlugin("projects"));
 
-        // Jenkins jobs REST API
-        serve("/jobs").with(JobsServlet.class);
+        /*
+         * Jenkins jobs REST API
+         * This regex is intended to match /jobs/${projectName}.
+         */
+        serveRegex("/jobs/[^\\/]+$").with(JobsServlet.class);
     }
 }

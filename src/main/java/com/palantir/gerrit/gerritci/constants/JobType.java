@@ -36,6 +36,16 @@ public enum JobType {
         return templateMap.get(this);
     }
 
+    /**
+     * Given a project name, returns the name of the Jenkins job associated with this job type.
+     *
+     * @param projectName The name of the project to get the job name for.
+     * @return The name for the Jenkins job with the specified project name and this job type.
+     */
+    public String getJobName(String projectName) {
+        return String.format("gerrit-ci_%s_%s", projectName.replace('/', '_'), nameMap.get(this));
+    }
+
     @Override
     public String toString() {
         return nameMap.get(this);
