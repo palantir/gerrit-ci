@@ -71,3 +71,7 @@ local.properties
 
 ### Velocity ###
 velocity.log*
+
+
+### SSH ###
+id_admin

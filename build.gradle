@@ -130,7 +130,7 @@ copy.mustRunAfter build
 task reload(type:Exec) {
     executable "ssh"
     args '-o', 'UserKnownHostsFile=/dev/null', '-o', 'StrictHostKeyChecking=no', '-p', '29418',
-        'localhost', 'gerrit', 'plugin', 'reload', 'gerrit-ci'
+        '-i', './id_admin', 'admin@localhost', 'gerrit', 'plugin', 'reload', 'gerrit-ci'
 }
 reload.mustRunAfter copy
 

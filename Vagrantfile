@@ -32,6 +32,11 @@ Vagrant.configure(2) do |config|
     mkdir gerrit
     java -jar gerrit-2.11.1.war init -d gerrit --batch
 
+    # Generate SSH keys
+    ssh-keygen -f /home/vagrant/.ssh/id_jenkins -N "" -C "jenkins@localhost"
+    ssh-keygen -f /home/vagrant/.ssh/id_admin -N "" -C "admin@localhost"
+    cp ~/.ssh/id_admin /vagrant
+
     # Configure and run Gerrit
     git config -f gerrit/etc/gerrit.config auth.type DEVELOPMENT_BECOME_ANY_ACCOUNT
     git config -f gerrit/etc/gerrit.config plugins.allowRemoteAdmin true
