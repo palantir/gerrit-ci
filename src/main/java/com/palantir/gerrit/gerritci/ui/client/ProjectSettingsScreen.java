@@ -8,14 +8,15 @@ import com.google.gerrit.plugin.client.PluginEntryPoint;
 import com.google.gerrit.plugin.client.rpc.RestApi;
 import com.google.gerrit.plugin.client.screen.Screen;
 import com.google.gwt.core.client.JavaScriptObject;
-import com.google.gwt.dom.client.Style.Unit;
+import com.google.gwt.dom.client.Document;
+import com.google.gwt.dom.client.HeadingElement;
 import com.google.gwt.event.dom.client.ClickEvent;
 import com.google.gwt.event.dom.client.ClickHandler;
 import com.google.gwt.user.client.History;
 import com.google.gwt.user.client.rpc.AsyncCallback;
 import com.google.gwt.user.client.ui.Button;
 import com.google.gwt.user.client.ui.CheckBox;
-import com.google.gwt.user.client.ui.InlineLabel;
+import com.google.gwt.user.client.ui.HTML;
 import com.google.gwt.user.client.ui.TextBox;
 import com.google.gwt.user.client.ui.VerticalPanel;
 
@@ -29,16 +30,6 @@ public class ProjectSettingsScreen extends PluginEntryPoint {
      * The name of the currently-selected project
      */
     private String projectName;
-
-    /**
-     * Main panel into which we will place all other panels and widgets for this screen
-     */
-    private VerticalPanel verticalPanel;
-
-    /**
-     * Big header that displays the project name
-     */
-    private InlineLabel header;
 
     /**
      * CheckBox that will enable or disable verify jobs
@@ -90,12 +81,13 @@ public class ProjectSettingsScreen extends PluginEntryPoint {
                  * History.getToken() returns the current page's URL, which we can parse to get the
                  * current project's name.
                  */
-                final String encodedProjectName = History.getToken().replace("/x/gerrit-ci/projects/", "");
+                final String encodedProjectName =
+                    History.getToken().replace("/x/gerrit-ci/projects/", "");
                 projectName = encodedProjectName.replace("%2F", "/");
 
                 // Instantiate widgets
-                verticalPanel = new VerticalPanel();
-                header = new InlineLabel("Gerrit-CI Settings for Project: " + projectName);
+                VerticalPanel verticalPanel = new VerticalPanel();
+
                 verifyJobEnabled = new CheckBox("Disabled");
                 verifyBranchRegex = new TextBox();
                 publishJobEnabled = new CheckBox("Disabled");
@@ -105,7 +97,14 @@ public class ProjectSettingsScreen extends PluginEntryPoint {
                 saveButton = new Button("Save");
 
                 // header
-                header.getElement().getStyle().setFontSize(20, Unit.PX);
+                HeadingElement header = Document.get().createHElement(1);
+                header.setInnerText("Gerrit-CI Settings for Project: " + projectName);
+                verticalPanel.add(HTML.wrap(header));
+
+                // verifyHeader
+                HeadingElement verifyHeader = Document.get().createHElement(2);
+                verifyHeader.setInnerText("Verify Job");
+                verticalPanel.add(HTML.wrap(verifyHeader));
 
                 // verifyJobEnabled
                 verifyJobEnabled.setValue(false);
@@ -118,9 +117,16 @@ public class ProjectSettingsScreen extends PluginEntryPoint {
                         updateWidgetEnablity();
                     }
                 });
+                verticalPanel.add(verifyJobEnabled);
 
                 // verifyBranchRegex
                 verifyBranchRegex.setText(".*");
+                verticalPanel.add(verifyBranchRegex);
+
+                // publishHeader
+                HeadingElement publishHeader = Document.get().createHElement(2);
+                publishHeader.setInnerText("Publish Job");
+                verticalPanel.add(HTML.wrap(publishHeader));
 
                 // publishJobEnabled
                 publishJobEnabled.setValue(false);
@@ -133,9 +139,21 @@ public class ProjectSettingsScreen extends PluginEntryPoint {
                         updateWidgetEnablity();
                     }
                 });
+                verticalPanel.add(publishJobEnabled);
 
                 // publishBranchRegex
                 publishBranchRegex.setText("refs/heads/(develop|master)");
+                verticalPanel.add(publishBranchRegex);
+
+                // generalHeader
+                HeadingElement generalHeader = Document.get().createHElement(2);
+                generalHeader.setInnerText("General Settings");
+                verticalPanel.add(HTML.wrap(generalHeader));
+
+                // timeoutHeader
+                HeadingElement timeoutHeader = Document.get().createHElement(3);
+                timeoutHeader.setInnerText("Timeouts");
+                verticalPanel.add(HTML.wrap(timeoutHeader));
 
                 // timeoutEnabled
                 timeoutEnabled.setValue(false);
@@ -148,9 +166,11 @@ public class ProjectSettingsScreen extends PluginEntryPoint {
                         updateWidgetEnablity();
                     }
                 });
+                verticalPanel.add(timeoutEnabled);
 
                 // timeoutMinutes
                 timeoutMinutes.setText("15");
+                verticalPanel.add(timeoutMinutes);
 
                 // saveButton
                 saveButton.addClickHandler(new ClickHandler() {
@@ -166,7 +186,8 @@ public class ProjectSettingsScreen extends PluginEntryPoint {
                         params.put("timeoutEnabled", timeoutEnabled.getValue());
                         params.put("timeoutMinutes", Integer.valueOf(timeoutMinutes.getText()));
 
-                        new RestApi("plugins").id("gerrit-ci").view("jobs").view(encodedProjectName)
+                        new RestApi("plugins").id("gerrit-ci").view("jobs")
+                            .view(encodedProjectName)
                             .put((JavaScriptObject) params, new AsyncCallback<JavaScriptObject>() {
 
                                 @Override
@@ -181,18 +202,9 @@ public class ProjectSettingsScreen extends PluginEntryPoint {
                             });
                     }
                 });
+                verticalPanel.add(saveButton);
 
                 updateWidgetEnablity();
-
-                // Add all widgets to the main VerticalPanel
-                verticalPanel.add(header);
-                verticalPanel.add(verifyJobEnabled);
-                verticalPanel.add(verifyBranchRegex);
-                verticalPanel.add(publishJobEnabled);
-                verticalPanel.add(publishBranchRegex);
-                verticalPanel.add(timeoutEnabled);
-                verticalPanel.add(timeoutMinutes);
-                verticalPanel.add(saveButton);
 
                 screen.add(verticalPanel);
                 screen.show();

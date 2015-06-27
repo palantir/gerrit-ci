@@ -8,4 +8,6 @@
 
     <!-- Specify the entry point class -->
     <entry-point class="com.palantir.gerrit.gerritci.ui.client.ProjectSettingsScreen" />
+
+    <stylesheet src="projects.css" />
 </module>
