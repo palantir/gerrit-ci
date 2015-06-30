@@ -12,9 +12,6 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.google.common.io.CharStreams;
 import com.google.gerrit.reviewdb.client.Project.NameKey;
 import com.google.gerrit.server.CurrentUser;
@@ -34,7 +31,6 @@ import com.palantir.gerrit.gerritci.util.JenkinsJobParser;
 public class JobsServlet extends HttpServlet {
 
     private static final long serialVersionUID = -4428173510340797397L;
-    private static final Logger logger = LoggerFactory.getLogger(JobsServlet.class);
     private ProjectControl.Factory projectControlFactory;
 
     @Inject
@@ -42,33 +38,41 @@ public class JobsServlet extends HttpServlet {
         this.projectControlFactory = projectControlFactory;
     }
 
-    private boolean currentUserCanAccess() {
+    private int getResponseCode(String projectName) {
         try {
             ProjectControl projectControl =
-                this.projectControlFactory.controlFor(new NameKey("All-Projects"));
+                this.projectControlFactory.controlFor(new NameKey(projectName));
             CurrentUser user = projectControl.getCurrentUser();
 
-            // TODO: Check if the current user has permissions for the project in question
+            // This will be the case if the user is unauthenticated.
+            if(user.getRealUser().toString().equals("ANONYMOUS")) {
+                return 401;
+            }
 
-            // If the current user is not signed in, the real user will be "ANONYMOUS"
-            return !user.getRealUser().toString().equals("ANONYMOUS");
+            // Make sure the user is the owner of the project or an admin.
+            if(!(projectControl.isVisible() && (user.getCapabilities().canAdministrateServer() || projectControl
+                .isOwner()))) {
+                return 403;
+            }
+
+            return 200;
         } catch(NoSuchProjectException e) {
-            logger.error("Failed API access test. Can't find All-Projects", e);
-            return false;
+            return 404;
         }
     }
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse res) throws ServletException,
         IOException {
-        if(!currentUserCanAccess()) {
-            res.setStatus(401);
-            return;
-        }
-
         String encodedProjectName =
             req.getRequestURI().substring(req.getRequestURI().lastIndexOf('/') + 1);
         String projectName = encodedProjectName.replace("%2F", "/");
+
+        int responseCode = getResponseCode(projectName);
+        if(responseCode != 200) {
+            res.setStatus(responseCode);
+            return;
+        }
 
         // TODO: Replace this with the request body
         JenkinsServerConfiguration jsc = new JenkinsServerConfiguration();
@@ -87,14 +91,15 @@ public class JobsServlet extends HttpServlet {
     @Override
     protected void doPut(HttpServletRequest req, HttpServletResponse res) throws ServletException,
         IOException {
-        if(!currentUserCanAccess()) {
-            res.setStatus(401);
-            return;
-        }
-
         String encodedProjectName =
             req.getRequestURI().substring(req.getRequestURI().lastIndexOf('/') + 1);
         String projectName = encodedProjectName.replace("%2F", "/");
+
+        int responseCode = getResponseCode(projectName);
+        if(responseCode != 200) {
+            res.setStatus(responseCode);
+            return;
+        }
 
         /*
          * The actual parameters we send are encoded into a JSON object such that they are contained

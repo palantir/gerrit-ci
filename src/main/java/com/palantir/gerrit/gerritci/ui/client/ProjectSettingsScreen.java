@@ -12,7 +12,7 @@ import com.google.gwt.dom.client.Document;
 import com.google.gwt.dom.client.HeadingElement;
 import com.google.gwt.event.dom.client.ClickEvent;
 import com.google.gwt.event.dom.client.ClickHandler;
-import com.google.gwt.user.client.History;
+import com.google.gwt.user.client.Window;
 import com.google.gwt.user.client.rpc.AsyncCallback;
 import com.google.gwt.user.client.ui.Button;
 import com.google.gwt.user.client.ui.CheckBox;
@@ -77,12 +77,8 @@ public class ProjectSettingsScreen extends PluginEntryPoint {
 
             @Override
             public void onLoad(Screen screen) {
-                /*
-                 * History.getToken() returns the current page's URL, which we can parse to get the
-                 * current project's name.
-                 */
                 final String encodedProjectName =
-                    History.getToken().replace("/x/gerrit-ci/projects/", "");
+                    Window.Location.getHash().replace("#/x/gerrit-ci/projects/", "");
                 projectName = encodedProjectName.replace("%2F", "/");
 
                 // Instantiate widgets
@@ -192,7 +188,7 @@ public class ProjectSettingsScreen extends PluginEntryPoint {
 
                                 @Override
                                 public void onFailure(Throwable caught) {
-                                    // TODO: Handle this situation
+                                    // Never invoked. Errors are shown in a dialog.
                                 }
 
                                 @Override
@@ -214,7 +210,7 @@ public class ProjectSettingsScreen extends PluginEntryPoint {
 
                         @Override
                         public void onFailure(Throwable caught) {
-                            // TODO: Handle this situation
+                            // Never invoked. Errors are shown in a dialog.
                         }
 
                         @Override
