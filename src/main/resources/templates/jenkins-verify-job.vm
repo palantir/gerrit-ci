@@ -19,7 +19,7 @@
             <hudson.plugins.git.UserRemoteConfig>
                 <name>origin</name>
                 <refspec>+$GERRIT_REFSPEC:refs/heads/gerrit</refspec>
-                <url>ssh://jenkins@localhost:29418/${projectName}.git</url>
+                <url>ssh://${gerritUser}@${host}:${port}/${projectName}.git</url>
             </hudson.plugins.git.UserRemoteConfig>
         </userRemoteConfigs>
 

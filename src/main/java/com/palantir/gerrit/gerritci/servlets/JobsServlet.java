@@ -13,8 +13,10 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import com.google.common.io.CharStreams;
+import com.google.gerrit.common.data.GerritConfig;
 import com.google.gerrit.reviewdb.client.Project.NameKey;
 import com.google.gerrit.server.CurrentUser;
+import com.google.gerrit.server.config.CanonicalWebUrl;
 import com.google.gerrit.server.project.NoSuchProjectException;
 import com.google.gerrit.server.project.ProjectControl;
 import com.google.gson.JsonElement;
@@ -32,10 +34,15 @@ public class JobsServlet extends HttpServlet {
 
     private static final long serialVersionUID = -4428173510340797397L;
     private ProjectControl.Factory projectControlFactory;
+    private GerritConfig gerritConfig;
+    private String canonicalWebUrl;
 
     @Inject
-    public JobsServlet(final ProjectControl.Factory projectControlFactory) {
+    public JobsServlet(final ProjectControl.Factory projectControlFactory,
+        final GerritConfig gerritConfig, @CanonicalWebUrl String canonicalWebUrl) {
         this.projectControlFactory = projectControlFactory;
+        this.gerritConfig = gerritConfig;
+        this.canonicalWebUrl = canonicalWebUrl;
     }
 
     private int getResponseCode(String projectName) {
@@ -172,6 +179,16 @@ public class JobsServlet extends HttpServlet {
         try {
             jsc.setUri(new URI("http://localhost:8000"));
         } catch(URISyntaxException e) {}
+
+        String sshPort = gerritConfig.getSshdAddress();
+        sshPort = sshPort.substring(sshPort.lastIndexOf(':') + 1);
+
+        String host = canonicalWebUrl.replace("https://", "").replace("http://", "");
+        host = host.substring(0, host.indexOf(':'));
+
+        params.put("gerritUser", "jenkins");
+        params.put("host", host);
+        params.put("port", sshPort);
 
         String verifyJobName = JobType.VERIFY.getJobName(projectName);
         String publishJobName = JobType.PUBLISH.getJobName(projectName);
