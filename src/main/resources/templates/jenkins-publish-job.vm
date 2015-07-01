@@ -115,7 +115,7 @@ date
 git reset --hard
 git clean -fdx
 
-./scripts/publish.sh
+${publishCommand}
             </command>
         </hudson.tasks.Shell>
     </builders>

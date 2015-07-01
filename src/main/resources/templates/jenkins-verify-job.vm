@@ -116,7 +116,7 @@ date
 git reset --hard
 git clean -fdx
 
-./scripts/verify.sh
+${verifyCommand}
             </command>
         </hudson.tasks.Shell>
     </builders>

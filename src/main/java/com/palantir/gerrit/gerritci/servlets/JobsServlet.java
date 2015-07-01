@@ -143,6 +143,13 @@ public class JobsServlet extends HttpServlet {
         }
         params.put("verifyBranchRegex", requestParams.get("verifyBranchRegex").getAsString());
 
+        // verifyCommand
+        if(!requestParams.has("verifyCommand")) {
+            res.setStatus(400);
+            return;
+        }
+        params.put("verifyCommand", requestParams.get("verifyCommand").getAsString());
+
         // publishJobEnabled
         if(!requestParams.has("publishJobEnabled")) {
             res.setStatus(400);
@@ -157,6 +164,13 @@ public class JobsServlet extends HttpServlet {
             return;
         }
         params.put("publishBranchRegex", requestParams.get("publishBranchRegex").getAsString());
+
+        // publishCommand
+        if(!requestParams.has("publishCommand")) {
+            res.setStatus(400);
+            return;
+        }
+        params.put("publishCommand", requestParams.get("publishCommand").getAsString());
 
         // timeoutEnabled
         if(!requestParams.has("timeoutEnabled")) {

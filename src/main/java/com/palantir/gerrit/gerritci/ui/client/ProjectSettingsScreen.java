@@ -42,6 +42,11 @@ public class ProjectSettingsScreen extends PluginEntryPoint {
     private TextBox verifyBranchRegex;
 
     /**
+     * TextBox that contains the name of the command to run for verify jobs
+     */
+    private TextBox verifyCommand;
+
+    /**
      * CheckBox that will enable or disable publish jobs
      */
     private CheckBox publishJobEnabled;
@@ -50,6 +55,11 @@ public class ProjectSettingsScreen extends PluginEntryPoint {
      * TextBox that contains the regex describing which branches to run publish jobs on
      */
     private TextBox publishBranchRegex;
+
+    /**
+     * TextBox that contains the name of the command to run for publish jobs
+     */
+    private TextBox publishCommand;
 
     /**
      * CheckBox that will enable or disable timeouts for jobs
@@ -86,8 +96,10 @@ public class ProjectSettingsScreen extends PluginEntryPoint {
 
                 verifyJobEnabled = new CheckBox("Disabled");
                 verifyBranchRegex = new TextBox();
+                verifyCommand = new TextBox();
                 publishJobEnabled = new CheckBox("Disabled");
                 publishBranchRegex = new TextBox();
+                publishCommand = new TextBox();
                 timeoutEnabled = new CheckBox("Disabled");
                 timeoutMinutes = new TextBox();
                 saveButton = new Button("Save");
@@ -119,6 +131,10 @@ public class ProjectSettingsScreen extends PluginEntryPoint {
                 verifyBranchRegex.setText(".*");
                 verticalPanel.add(verifyBranchRegex);
 
+                // verifyCommand
+                verifyCommand.setText("./scripts/verify.sh");
+                verticalPanel.add(verifyCommand);
+
                 // publishHeader
                 HeadingElement publishHeader = Document.get().createHElement(2);
                 publishHeader.setInnerText("Publish Job");
@@ -140,6 +156,10 @@ public class ProjectSettingsScreen extends PluginEntryPoint {
                 // publishBranchRegex
                 publishBranchRegex.setText("refs/heads/(develop|master)");
                 verticalPanel.add(publishBranchRegex);
+
+                // publishCommand
+                publishCommand.setText("./scripts/publish.sh");
+                verticalPanel.add(publishCommand);
 
                 // generalHeader
                 HeadingElement generalHeader = Document.get().createHElement(2);
@@ -175,10 +195,15 @@ public class ProjectSettingsScreen extends PluginEntryPoint {
                     public void onClick(ClickEvent event) {
                         Map<String, Object> params = new HashMap<String, Object>();
                         params.put("projectName", projectName);
+
                         params.put("verifyJobEnabled", verifyJobEnabled.getValue());
                         params.put("verifyBranchRegex", verifyBranchRegex.getText());
+                        params.put("verifyCommand", verifyCommand.getText());
+
                         params.put("publishJobEnabled", publishJobEnabled.getValue());
                         params.put("publishBranchRegex", publishBranchRegex.getText());
+                        params.put("publishCommand", publishCommand.getText());
+
                         params.put("timeoutEnabled", timeoutEnabled.getValue());
                         params.put("timeoutMinutes", Integer.valueOf(timeoutMinutes.getText()));
 
@@ -230,15 +255,27 @@ public class ProjectSettingsScreen extends PluginEntryPoint {
                                 : "Disabled");
 
                             String verifyBranchRegexString = config.getVerifyBranchRegex();
+                            String verifyCommandString = config.getVerifyCommand();
+
                             String publishBranchRegexString = config.getPublishBranchRegex();
+                            String publishCommandString = config.getPublishCommand();
+
                             Integer timeoutMinutesInteger = config.getTimeoutMinutes();
 
                             if(verifyBranchRegexString != null) {
                                 verifyBranchRegex.setText(verifyBranchRegexString);
                             }
 
+                            if(verifyCommandString != null) {
+                                verifyCommand.setText(verifyCommandString);
+                            }
+
                             if(publishBranchRegexString != null) {
                                 publishBranchRegex.setText(publishBranchRegexString);
+                            }
+
+                            if(publishCommandString != null) {
+                                publishCommand.setText(publishCommandString);
                             }
 
                             if(timeoutMinutesInteger != null) {
@@ -259,7 +296,11 @@ public class ProjectSettingsScreen extends PluginEntryPoint {
      */
     private void updateWidgetEnablity() {
         verifyBranchRegex.setEnabled(verifyJobEnabled.getValue());
+        verifyCommand.setEnabled(verifyJobEnabled.getValue());
+
         publishBranchRegex.setEnabled(publishJobEnabled.getValue());
+        publishCommand.setEnabled(publishJobEnabled.getValue());
+
         timeoutEnabled.setEnabled(verifyJobEnabled.getValue() || publishJobEnabled.getValue());
         timeoutMinutes.setEnabled(timeoutEnabled.getValue());
     }

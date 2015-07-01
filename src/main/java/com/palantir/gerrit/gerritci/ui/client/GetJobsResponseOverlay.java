@@ -18,6 +18,10 @@ public class GetJobsResponseOverlay extends JavaScriptObject {
                                                      return this.verifyBranchRegex;
                                                      }-*/;
 
+    public final native String getVerifyCommand()/*-{
+                                                 return this.verifyCommand;
+                                                 }-*/;
+
     public final native boolean getPublishJobEnabled()/*-{
                                                       return this.publishJobEnabled;
                                                       }-*/;
@@ -25,6 +29,10 @@ public class GetJobsResponseOverlay extends JavaScriptObject {
     public final native String getPublishBranchRegex()/*-{
                                                       return this.publishBranchRegex;
                                                       }-*/;
+
+    public final native String getPublishCommand()/*-{
+                                                  return this.publishCommand;
+                                                  }-*/;
 
     public final native Boolean getTimeoutEnabled()/*-{
                                                    return this.timeoutEnabled;

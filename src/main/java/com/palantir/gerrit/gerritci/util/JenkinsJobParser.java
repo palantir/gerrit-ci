@@ -22,6 +22,9 @@ public class JenkinsJobParser {
 
     private static final String TIMEOUT_TAG = "hudson.plugins.build__timeout.BuildTimeoutWrapper";
 
+    private static final String COMMAND_PREFIX =
+        "#!/bin/bash set -x set -e date git reset --hard git clean -fdx ";
+
     // Suppress default constructor for noninstantiability
     private JenkinsJobParser() {}
 
@@ -52,6 +55,13 @@ public class JenkinsJobParser {
                                      .getElementsByTag(BRANCH_TAG).get(0)
                                      .getElementsByTag("pattern").get(0).html());
 
+            String verifyCommand =
+                Jsoup.parse(verifyJobXml, "", Parser.xmlParser()).getElementsByTag("project")
+                    .get(0).getElementsByTag("builders").get(0)
+                    .getElementsByTag("hudson.tasks.Shell").get(0).getElementsByTag("command")
+                    .get(0).html();
+            settings.addProperty("verifyCommand", verifyCommand.replace(COMMAND_PREFIX, ""));
+
             Elements timeoutTags =
                 Jsoup.parse(verifyJobXml, "", Parser.xmlParser()).getElementsByTag(TIMEOUT_TAG);
             boolean timeoutEnabled = timeoutTags.size() > 0;
@@ -76,6 +86,12 @@ public class JenkinsJobParser {
                                      .getElementsByTag("branches").get(0)
                                      .getElementsByTag(BRANCH_TAG).get(0)
                                      .getElementsByTag("pattern").get(0).html());
+            String publishCommand =
+                Jsoup.parse(publishJobXml, "", Parser.xmlParser()).getElementsByTag("project")
+                    .get(0).getElementsByTag("builders").get(0)
+                    .getElementsByTag("hudson.tasks.Shell").get(0).getElementsByTag("command")
+                    .get(0).html();
+            settings.addProperty("publishCommand", publishCommand.replace(COMMAND_PREFIX, ""));
 
             Elements timeoutTags =
                 Jsoup.parse(publishJobXml, "", Parser.xmlParser()).getElementsByTag(TIMEOUT_TAG);
