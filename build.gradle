@@ -103,7 +103,7 @@ dependencies {
 
 gwt {
     gwtVersion = '2.6.1'
-    modules 'com.palantir.gerrit.gerritci.ui.settings', 'com.palantir.gerrit.gerritci.ui.projects'
+    modules 'com.palantir.gerrit.gerritci.ui.projects'
 
     compiler {
         disableClassMetadata = true

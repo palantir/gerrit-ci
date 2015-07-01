@@ -13,9 +13,6 @@ public class HttpModule extends HttpPluginModule {
 
     @Override
     protected void configureServlets() {
-        // Gerrit-CI settings page
-        DynamicSet.bind(binder(), WebUiPlugin.class).toInstance(new GwtPlugin("settings"));
-
         // Gerrit-CI project-specific settings page
         DynamicSet.bind(binder(), WebUiPlugin.class).toInstance(new GwtPlugin("projects"));
 
