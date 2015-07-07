@@ -24,7 +24,7 @@
 
         <branches>
             <hudson.plugins.git.BranchSpec>
-                <name>:$publishBranchRegex</name>
+                <name>$GERRIT_REFNAME</name>
             </hudson.plugins.git.BranchSpec>
         </branches>
 
@@ -78,7 +78,6 @@
             <triggerInformationAction />
 
             <triggerOnEvents>
-                <com.sonyericsson.hudson.plugins.gerrit.trigger.hudsontrigger.events.PluginChangeMergedEvent />
                 <com.sonyericsson.hudson.plugins.gerrit.trigger.hudsontrigger.events.PluginRefUpdatedEvent />
             </triggerOnEvents>
 

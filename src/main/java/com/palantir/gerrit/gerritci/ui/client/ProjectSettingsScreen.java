@@ -197,7 +197,8 @@ public class ProjectSettingsScreen extends PluginEntryPoint {
                 ParagraphElement publishBranchRegexDescription = Document.get().createPElement();
                 publishBranchRegexDescription.setClassName("description");
                 publishBranchRegexDescription
-                    .setInnerText("Branches matching this regex will have the publish job command run on them by Jenkins");
+                    .setInnerText("Branches matching this regex will have the publish job command" +
+                            " run on them by Jenkins. This regex must begin with \"refs/heads/\"");
                 verticalPanel.add(HTML.wrap(publishBranchRegexDescription));
 
                 // publishCommand

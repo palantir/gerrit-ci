@@ -47,13 +47,17 @@ public class JenkinsJobParser {
         settings.addProperty("verifyJobEnabled", verifyExists);
         if(verifyExists) {
             String verifyJobXml = JenkinsProvider.getJobXml(jsc, verifyJobName);
-            settings.addProperty("verifyBranchRegex",
-                                 Jsoup.parse(verifyJobXml, "", Parser.xmlParser())
+
+            String verifyBranchRegex = Jsoup.parse(verifyJobXml, "", Parser.xmlParser())
                                      .getElementsByTag("gerritProjects").get(0)
                                      .getElementsByTag(GERRITPROJECT_TAG).get(0)
                                      .getElementsByTag("branches").get(0)
                                      .getElementsByTag(BRANCH_TAG).get(0)
-                                     .getElementsByTag("pattern").get(0).html());
+                                     .getElementsByTag("pattern").get(0).html();
+            verifyBranchRegex = verifyBranchRegex.substring(1,verifyBranchRegex.length() - 1);
+            verifyBranchRegex = verifyBranchRegex.replace("(?!refs/meta/)", "");
+            verifyBranchRegex = verifyBranchRegex.replace("(?!refs/)", "refs/heads/");
+            settings.addProperty("verifyBranchRegex", verifyBranchRegex);
 
             String verifyCommand =
                 Jsoup.parse(verifyJobXml, "", Parser.xmlParser()).getElementsByTag("project")
@@ -79,13 +83,17 @@ public class JenkinsJobParser {
         settings.addProperty("publishJobEnabled", publishExists);
         if(publishExists) {
             String publishJobXml = JenkinsProvider.getJobXml(jsc, publishJobName);
-            settings.addProperty("publishBranchRegex",
-                                 Jsoup.parse(publishJobXml, "", Parser.xmlParser())
+
+            String publishBranchRegex = Jsoup.parse(publishJobXml, "", Parser.xmlParser())
                                      .getElementsByTag("gerritProjects").get(0)
                                      .getElementsByTag(GERRITPROJECT_TAG).get(0)
                                      .getElementsByTag("branches").get(0)
                                      .getElementsByTag(BRANCH_TAG).get(0)
-                                     .getElementsByTag("pattern").get(0).html());
+                                     .getElementsByTag("pattern").get(0).html();
+            publishBranchRegex = publishBranchRegex.substring(1, publishBranchRegex.length() - 1);
+            publishBranchRegex = publishBranchRegex.replace("(?!refs/)", "refs/heads/");
+            settings.addProperty("publishBranchRegex", publishBranchRegex);
+
             String publishCommand =
                 Jsoup.parse(publishJobXml, "", Parser.xmlParser()).getElementsByTag("project")
                     .get(0).getElementsByTag("builders").get(0)

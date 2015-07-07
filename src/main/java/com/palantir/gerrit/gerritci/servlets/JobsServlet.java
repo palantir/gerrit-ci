@@ -141,7 +141,13 @@ public class JobsServlet extends HttpServlet {
             res.setStatus(400);
             return;
         }
-        params.put("verifyBranchRegex", requestParams.get("verifyBranchRegex").getAsString());
+        String verifyBranchRegex = requestParams.get("verifyBranchRegex").getAsString();
+        if(verifyBranchRegex.startsWith("refs/heads/")) {
+            verifyBranchRegex = verifyBranchRegex.replace("refs/heads/", "(?!refs/)");
+        }
+        verifyBranchRegex = String.format("(?!refs/meta/)%s", verifyBranchRegex);
+        verifyBranchRegex = String.format("^%s$", verifyBranchRegex);
+        params.put("verifyBranchRegex", verifyBranchRegex);
 
         // verifyCommand
         if(!requestParams.has("verifyCommand")) {
@@ -163,7 +169,14 @@ public class JobsServlet extends HttpServlet {
             res.setStatus(400);
             return;
         }
-        params.put("publishBranchRegex", requestParams.get("publishBranchRegex").getAsString());
+        String publishBranchRegex = requestParams.get("publishBranchRegex").getAsString();
+        if(!publishBranchRegex.startsWith("refs/heads/")) {
+            res.setStatus(400);
+            return;
+        }
+        publishBranchRegex = publishBranchRegex.replace("refs/heads/", "(?!refs/)");
+        publishBranchRegex = String.format("^%s$", publishBranchRegex);
+        params.put("publishBranchRegex", publishBranchRegex);
 
         // publishCommand
         if(!requestParams.has("publishCommand")) {

@@ -31,6 +31,7 @@ git config -f project.config --add label.Verified.value '+1 Verified'
 git config -f project.config --add capability.streamEvents "group jenkins-ro"
 git config -f project.config --add access.refs/heads/*.label-Verified "-1..+1 group Administrators"
 git config -f project.config --add access.refs/heads/*.label-Verified "-1..+1 group Project Owners"
+git config -f project.config --add access.refs/heads/*.label-Verified "-1..+1 group jenkins-ro"
 git commit -a -m "Install Verified label"
 git push origin meta/config:meta/config
 cd ..
