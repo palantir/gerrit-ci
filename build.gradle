@@ -60,6 +60,9 @@ repositories {
 jar {
     from 'build/gwt/include'
 
+    // Gerrit plugins are not supposed to have versions in the filename
+    archiveName 'gerrit-ci.jar'
+
     manifest {
         attributes(
             'Gerrit-PluginName': project.name,
@@ -67,7 +70,7 @@ jar {
             'Gerrit-ApiVersion': apiVersion,
             'Gerrit-Module': 'com.palantir.gerrit.gerritci.Module',
             'Gerrit-HttpModule': 'com.palantir.gerrit.gerritci.HttpModule',
-            'Gerrit-ReloadMode': 'restart',
+            'Gerrit-ReloadMode': 'reload',
             'Implementation-Vendor': 'Palantir',
             'Implementation-URL': 'https://github.com/palantir/gerrit-ci',
             'Implementation-Title': "${apiType} ${project.name}",
@@ -121,18 +124,11 @@ copyGwt.mustRunAfter compileGwt
 build.dependsOn copyGwt
 build.mustRunAfter copyGwt
 
-task copy(type:Exec) {
-    executable "vagrant"
-    args 'ssh', '-c', "cp /vagrant/build/libs/gerrit-ci-${version}.jar ~/gerrit/plugins"
-}
-copy.mustRunAfter build
-
 task reload(type:Exec) {
-    executable "ssh"
-    args '-o', 'UserKnownHostsFile=/dev/null', '-o', 'StrictHostKeyChecking=no', '-p', '29418',
-        '-i', './id_admin', 'admin@localhost', 'gerrit', 'plugin', 'reload', 'gerrit-ci'
+    commandLine "./scripts/reload-plugin.sh"
 }
-reload.mustRunAfter copy
+reload.dependsOn build
+reload.mustRunAfter build
 
-task all(dependsOn: [build, copy, reload])
+task all(dependsOn: [build, reload])
 

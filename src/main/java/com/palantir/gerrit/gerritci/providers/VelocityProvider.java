@@ -31,7 +31,7 @@ public class VelocityProvider {
         velocityEngine.setProperty("url.resource.loader.class", URLResourceLoader.class.getName());
 
         // The current working directory is the root of the Gerrit server
-        File baseDirectory = new File("plugins/gerrit-ci-0.1.0.jar");
+        File baseDirectory = new File("plugins/gerrit-ci.jar");
         velocityEngine.setProperty("url.resource.loader.root",
             "jar:file://" + baseDirectory.getAbsolutePath() + "!/templates");
 
