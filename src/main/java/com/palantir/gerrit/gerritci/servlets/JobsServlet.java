@@ -24,6 +24,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
+import com.palantir.gerrit.gerritci.constants.Constants;
 import com.palantir.gerrit.gerritci.constants.JobType;
 import com.palantir.gerrit.gerritci.models.JenkinsServerConfiguration;
 import com.palantir.gerrit.gerritci.providers.JenkinsProvider;
@@ -84,7 +85,7 @@ public class JobsServlet extends HttpServlet {
         // TODO: Replace this with the request body
         JenkinsServerConfiguration jsc = new JenkinsServerConfiguration();
         try {
-            jsc.setUri(new URI("http://localhost:8000"));
+            jsc.setUri(new URI(Constants.JENKINS_URL));
         } catch(URISyntaxException e) {}
 
         JsonObject params = JenkinsJobParser.parseJenkinsJob(projectName, jsc);
@@ -204,7 +205,7 @@ public class JobsServlet extends HttpServlet {
         // TODO: Replace this with the request body
         JenkinsServerConfiguration jsc = new JenkinsServerConfiguration();
         try {
-            jsc.setUri(new URI("http://localhost:8000"));
+            jsc.setUri(new URI(Constants.JENKINS_URL));
         } catch(URISyntaxException e) {}
 
         String sshPort = gerritConfig.getSshdAddress();
@@ -213,7 +214,7 @@ public class JobsServlet extends HttpServlet {
         String host = canonicalWebUrl.replace("https://", "").replace("http://", "");
         host = host.substring(0, host.indexOf(':'));
 
-        params.put("gerritUser", "jenkins");
+        params.put("gerritUser", Constants.GERRIT_USER);
         params.put("host", host);
         params.put("port", sshPort);
 
