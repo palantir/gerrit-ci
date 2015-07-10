@@ -1,16 +1,14 @@
 package com.palantir.gerrit.gerritci.providers;
 
-import java.io.IOException;
-import java.io.StringWriter;
-import java.util.Map;
-
-import org.apache.velocity.Template;
-import org.apache.velocity.VelocityContext;
-
 import com.offbytwo.jenkins.JenkinsServer;
 import com.offbytwo.jenkins.model.Job;
 import com.palantir.gerrit.gerritci.constants.JobType;
 import com.palantir.gerrit.gerritci.models.JenkinsServerConfiguration;
+import org.apache.velocity.Template;
+import org.apache.velocity.VelocityContext;
+import java.io.IOException;
+import java.io.StringWriter;
+import java.util.Map;
 
 /**
  * This class provides a set of methods that are higher-level abstractions of the JenkinsServer
@@ -56,8 +54,8 @@ public class JenkinsProvider {
         try {
             return server.getJobXml(name);
         } catch(IOException e) {
-            throw new RuntimeException(String.format(
-                "Error getting job XML from Jenkins for job: %s", name), e);
+            throw new RuntimeException(
+                String.format("Error getting job XML from Jenkins for job: %s", name), e);
         }
     }
 
@@ -102,14 +100,14 @@ public class JenkinsProvider {
 
         if(jobExists(jsc, name)) {
             try {
-                server.updateJob(name, jobXml);
+                server.updateJob(name, jobXml, false);
             } catch(IOException e) {
                 throw new RuntimeException(String.format("Failed to update Jenkins job: %s", name),
                     e);
             }
         } else {
             try {
-                server.createJob(name, jobXml);
+                server.createJob(name, jobXml, false);
             } catch(IOException e) {
                 throw new RuntimeException(String.format("Failed to create Jenkins job: %s", name),
                     e);
@@ -132,7 +130,7 @@ public class JenkinsProvider {
         }
 
         try {
-            server.deleteJob(name);
+            server.deleteJob(name, false);
         } catch(IOException e) {
             throw new RuntimeException(String.format("Error deleting job %s from Jenkins", name), e);
         }

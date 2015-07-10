@@ -52,8 +52,8 @@ eclipse {
 
 repositories {
     mavenLocal()
+    maven { url "https://dl.bintray.com/mass/maven/" }
     mavenCentral()
-
     maven { url "http://repo.jenkins-ci.org/public/" }
 }
 
@@ -91,7 +91,8 @@ dependencies {
     )
 
     compile(
-        [group: 'com.offbytwo.jenkins', name: 'jenkins-client', version: '0.3.0'],
+        // We are stuck using the custom alpha version of jenkins-client until changes are merged upstream
+        [group: 'com.offbytwo.jenkins', name: 'jenkins-client', version: '0.3.1-alpha'],
         [group: 'org.slf4j', name: 'slf4j-api', version: '1.7.12'],
         [group: 'org.slf4j', name: 'slf4j-log4j12', version: '1.7.12'],
         [group: 'log4j', name: 'log4j', version: '1.2.17'],
