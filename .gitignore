@@ -76,3 +76,8 @@ velocity.log*
 ### SSH ###
 id_admin
 id_jenkins
+
+
+### IntelliJ ###
+.idea
+*.iml

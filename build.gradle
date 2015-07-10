@@ -13,8 +13,9 @@ buildscript {
 
 apply plugin: 'java'
 apply plugin: 'maven'
-apply plugin: 'eclipse'
 apply plugin: 'gwt'
+apply plugin: 'eclipse'
+apply plugin: 'idea'
 
 group = 'com.palantir.gerrit.gerritci'
 version = '0.1.0'
@@ -45,6 +46,14 @@ sourceSets {
 eclipse {
     classpath {
         plusConfigurations += [configurations.provided]
+        downloadSources = true
+        downloadJavadoc = true
+    }
+}
+
+idea {
+    module {
+        scopes.PROVIDED.plus += [configurations.provided]
         downloadSources = true
         downloadJavadoc = true
     }
