@@ -23,7 +23,7 @@ public class JenkinsProvider {
 
     // Returns a new JenkinsServer instance based off of the provided server configuration
     private static JenkinsServer getJenkinsServer(JenkinsServerConfiguration jsc) {
-        return new JenkinsServer(jsc.getUri());
+        return new JenkinsServer(jsc.getUri(), jsc.getUsername(), jsc.getPassword());
     }
 
     /**

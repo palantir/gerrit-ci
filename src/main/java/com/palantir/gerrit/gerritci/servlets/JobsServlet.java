@@ -6,12 +6,10 @@ import java.net.URISyntaxException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-
 import com.google.common.io.CharStreams;
 import com.google.gerrit.common.data.GerritConfig;
 import com.google.gerrit.reviewdb.client.Project.NameKey;
@@ -87,6 +85,8 @@ public class JobsServlet extends HttpServlet {
         try {
             jsc.setUri(new URI(Constants.JENKINS_URL));
         } catch(URISyntaxException e) {}
+        jsc.setUsername(Constants.JENKINS_USER);
+        jsc.setPassword(Constants.JENKINS_PASSWORD);
 
         JsonObject params = JenkinsJobParser.parseJenkinsJob(projectName, jsc);
 
@@ -207,6 +207,8 @@ public class JobsServlet extends HttpServlet {
         try {
             jsc.setUri(new URI(Constants.JENKINS_URL));
         } catch(URISyntaxException e) {}
+        jsc.setUsername(Constants.JENKINS_USER);
+        jsc.setPassword(Constants.JENKINS_PASSWORD);
 
         String sshPort = gerritConfig.getSshdAddress();
         sshPort = sshPort.substring(sshPort.lastIndexOf(':') + 1);
