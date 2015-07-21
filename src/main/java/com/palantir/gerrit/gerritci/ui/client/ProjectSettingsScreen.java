@@ -13,6 +13,8 @@ import com.google.gwt.dom.client.HeadingElement;
 import com.google.gwt.dom.client.ParagraphElement;
 import com.google.gwt.event.dom.client.ClickEvent;
 import com.google.gwt.event.dom.client.ClickHandler;
+import com.google.gwt.event.dom.client.KeyPressEvent;
+import com.google.gwt.event.dom.client.KeyPressHandler;
 import com.google.gwt.user.client.Window;
 import com.google.gwt.user.client.rpc.AsyncCallback;
 import com.google.gwt.user.client.ui.Button;
@@ -143,6 +145,12 @@ public class ProjectSettingsScreen extends PluginEntryPoint {
                 verifyBranchRegexLabel.setClassName("label");
                 verticalPanel.add(HTML.wrap(verifyBranchRegexLabel));
                 verifyBranchRegex.setText(".*");
+                verifyBranchRegex.addKeyPressHandler(new KeyPressHandler() {
+                    @Override
+                    public void onKeyPress(KeyPressEvent event) {
+                        event.stopPropagation();
+                    }
+                });
                 verticalPanel.add(verifyBranchRegex);
                 ParagraphElement verifyBranchRegexDescription = Document.get().createPElement();
                 verifyBranchRegexDescription.setClassName("description");
@@ -156,6 +164,12 @@ public class ProjectSettingsScreen extends PluginEntryPoint {
                 verifyCommandLabel.setClassName("label");
                 verticalPanel.add(HTML.wrap(verifyCommandLabel));
                 verifyCommand.setText("./scripts/verify.sh");
+                verifyCommand.addKeyPressHandler(new KeyPressHandler() {
+                    @Override
+                    public void onKeyPress(KeyPressEvent event) {
+                        event.stopPropagation();
+                    }
+                });
                 verticalPanel.add(verifyCommand);
                 ParagraphElement verifyCommandDescription = Document.get().createPElement();
                 verifyCommandDescription.setClassName("description");
@@ -193,6 +207,12 @@ public class ProjectSettingsScreen extends PluginEntryPoint {
                 publishBranchRegexLabel.setClassName("label");
                 verticalPanel.add(HTML.wrap(publishBranchRegexLabel));
                 publishBranchRegex.setText("refs/heads/(develop|master)");
+                publishBranchRegex.addKeyPressHandler(new KeyPressHandler() {
+                    @Override
+                    public void onKeyPress(KeyPressEvent event) {
+                        event.stopPropagation();
+                    }
+                });
                 verticalPanel.add(publishBranchRegex);
                 ParagraphElement publishBranchRegexDescription = Document.get().createPElement();
                 publishBranchRegexDescription.setClassName("description");
@@ -207,6 +227,12 @@ public class ProjectSettingsScreen extends PluginEntryPoint {
                 publishCommandLabel.setClassName("label");
                 verticalPanel.add(HTML.wrap(publishCommandLabel));
                 publishCommand.setText("./scripts/publish.sh");
+                publishCommand.addKeyPressHandler(new KeyPressHandler() {
+                    @Override
+                    public void onKeyPress(KeyPressEvent event) {
+                        event.stopPropagation();
+                    }
+                });
                 verticalPanel.add(publishCommand);
                 ParagraphElement publishCommandDescription = Document.get().createPElement();
                 publishCommandDescription.setClassName("description");
@@ -250,6 +276,12 @@ public class ProjectSettingsScreen extends PluginEntryPoint {
                 timeoutMinutesLabel.setClassName("label");
                 verticalPanel.add(HTML.wrap(timeoutMinutesLabel));
                 timeoutMinutes.setText("30");
+                timeoutMinutes.addKeyPressHandler(new KeyPressHandler() {
+                    @Override
+                    public void onKeyPress(KeyPressEvent event) {
+                        event.stopPropagation();
+                    }
+                });
                 verticalPanel.add(timeoutMinutes);
                 ParagraphElement timeoutMinutesDescription = Document.get().createPElement();
                 timeoutMinutesDescription.setClassName("description");

@@ -96,7 +96,8 @@ jar {
 dependencies {
     provided(
         [group: 'com.google.gerrit', name: "gerrit-${apiType}-api", version: apiVersion],
-        [group: 'com.google.gerrit', name: 'gerrit-plugin-gwtui', version: apiVersion]
+        [group: 'com.google.gerrit', name: 'gerrit-plugin-gwtui', version: apiVersion],
+        [group: 'com.google.gwt', name:'gwt-servlet', version: '2.6.1']
     )
 
     compile(
