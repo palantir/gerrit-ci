@@ -20,6 +20,7 @@
                 <name>origin</name>
                 <refspec>+$GERRIT_REFSPEC:refs/heads/gerrit</refspec>
                 <url>ssh://${gerritUser}@${host}:${port}/${projectName}.git</url>
+                <credentialsId>${credentialsId}</credentialsId>
             </hudson.plugins.git.UserRemoteConfig>
         </userRemoteConfigs>
 

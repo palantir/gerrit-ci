@@ -19,6 +19,7 @@
             <hudson.plugins.git.UserRemoteConfig>
                 <name>origin</name>
                 <url>ssh://${gerritUser}@${host}:${port}/${projectName}.git</url>
+                <credentialsId>${credentialsId}</credentialsId>
             </hudson.plugins.git.UserRemoteConfig>
         </userRemoteConfigs>
 

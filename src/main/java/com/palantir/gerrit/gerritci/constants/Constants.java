@@ -9,4 +9,5 @@ public class Constants {
     public static final String GERRIT_USER = "jenkins";
     public static final String JENKINS_USER = null;
     public static final String JENKINS_PASSWORD = null;
+    public static final String CREDENTIALS_ID = null;
 }

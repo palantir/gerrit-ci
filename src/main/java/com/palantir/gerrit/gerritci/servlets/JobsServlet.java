@@ -219,6 +219,7 @@ public class JobsServlet extends HttpServlet {
         params.put("gerritUser", Constants.GERRIT_USER);
         params.put("host", host);
         params.put("port", sshPort);
+        params.put("credentialsId", Constants.CREDENTIALS_ID);
 
         String verifyJobName = JobType.VERIFY.getJobName(projectName);
         String publishJobName = JobType.PUBLISH.getJobName(projectName);
