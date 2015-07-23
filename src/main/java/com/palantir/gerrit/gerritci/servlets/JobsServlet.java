@@ -214,7 +214,12 @@ public class JobsServlet extends HttpServlet {
         sshPort = sshPort.substring(sshPort.lastIndexOf(':') + 1);
 
         String host = canonicalWebUrl.replace("https://", "").replace("http://", "");
-        host = host.substring(0, host.indexOf(':'));
+        if(host.contains(":")) {
+            host = host.substring(0, host.indexOf(':'));
+        }
+        if(host.endsWith("/")) {
+            host = host.substring(0, host.length() - 1);
+        }
 
         params.put("gerritUser", Constants.GERRIT_USER);
         params.put("host", host);
