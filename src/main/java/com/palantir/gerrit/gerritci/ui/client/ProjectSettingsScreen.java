@@ -100,13 +100,13 @@ public class ProjectSettingsScreen extends PluginEntryPoint {
                 // Instantiate widgets
                 VerticalPanel verticalPanel = new VerticalPanel();
 
-                verifyJobEnabled = new CheckBox("Disabled");
+                verifyJobEnabled = new CheckBox("Enable Verify Jobs");
                 verifyBranchRegex = new TextBox();
                 verifyCommand = new TextBox();
-                publishJobEnabled = new CheckBox("Disabled");
+                publishJobEnabled = new CheckBox("Enable Publish Jobs");
                 publishBranchRegex = new TextBox();
                 publishCommand = new TextBox();
-                timeoutEnabled = new CheckBox("Disabled");
+                timeoutEnabled = new CheckBox("Enable Timeouts");
                 timeoutMinutes = new TextBox();
                 saveButton = new Button("Save & Update");
 
@@ -127,8 +127,6 @@ public class ProjectSettingsScreen extends PluginEntryPoint {
 
                     @Override
                     public void onClick(ClickEvent event) {
-                        boolean isEnabled = verifyJobEnabled.getValue();
-                        verifyJobEnabled.setText(isEnabled ? "Enabled" : "Disabled");
                         updateWidgetEnablity();
                     }
                 });
@@ -189,8 +187,6 @@ public class ProjectSettingsScreen extends PluginEntryPoint {
 
                     @Override
                     public void onClick(ClickEvent event) {
-                        boolean isEnabled = publishJobEnabled.getValue();
-                        publishJobEnabled.setText(isEnabled ? "Enabled" : "Disabled");
                         updateWidgetEnablity();
                     }
                 });
@@ -258,8 +254,6 @@ public class ProjectSettingsScreen extends PluginEntryPoint {
 
                     @Override
                     public void onClick(ClickEvent event) {
-                        boolean isEnabled = timeoutEnabled.getValue();
-                        timeoutEnabled.setText(isEnabled ? "Enabled" : "Disabled");
                         updateWidgetEnablity();
                     }
                 });
@@ -347,16 +341,8 @@ public class ProjectSettingsScreen extends PluginEntryPoint {
                             GetJobsResponseOverlay config = (GetJobsResponseOverlay) result;
 
                             verifyJobEnabled.setValue(config.getVerifyJobEnabled());
-                            verifyJobEnabled.setText(verifyJobEnabled.getValue() ? "Enabled"
-                                : "Disabled");
-
                             publishJobEnabled.setValue(config.getPublishJobEnabled());
-                            publishJobEnabled.setText(publishJobEnabled.getValue() ? "Enabled"
-                                : "Disabled");
-
                             timeoutEnabled.setValue(config.getTimeoutEnabled());
-                            timeoutEnabled.setText(timeoutEnabled.getValue() ? "Enabled"
-                                : "Disabled");
 
                             String verifyBranchRegexString = config.getVerifyBranchRegex();
                             String verifyCommandString = config.getVerifyCommand();
