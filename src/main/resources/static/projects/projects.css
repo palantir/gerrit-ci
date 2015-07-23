@@ -1,28 +1,28 @@
-h2 {
+.gerrit-ci h2 {
     border-bottom: 2px solid;
 }
 
-h2.subsection {
+.gerrit-ci h2.subsection {
     margin-top: 0;
     border-bottom: none;
 }
 
-h3 {
+.gerrit-ci h3 {
     margin-top: 0px;
 }
 
-.gwt-TextBox {
+.gerrit-ci .gwt-TextBox {
     margin-left: 20px;
     width: 200px;
     height: 25px;
     border-radius: 3px;
 }
 
-.label {
+.gerrit-ci .label {
     font-weight: bold;
 }
 
-.description {
+.gerrit-ci .description {
     margin-top: 10px;
     margin-left: 20px;
     font-weight: lighter;

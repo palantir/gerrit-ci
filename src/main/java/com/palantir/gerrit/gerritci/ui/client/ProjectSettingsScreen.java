@@ -99,6 +99,7 @@ public class ProjectSettingsScreen extends PluginEntryPoint {
 
                 // Instantiate widgets
                 VerticalPanel verticalPanel = new VerticalPanel();
+                verticalPanel.addStyleName("gerrit-ci");
 
                 verifyJobEnabled = new CheckBox("Enable Verify Jobs");
                 verifyBranchRegex = new TextBox();
