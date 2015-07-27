@@ -18,6 +18,7 @@ Vagrant.configure(2) do |config|
    end
 
   config.vm.provision "shell", privileged: false, inline: <<-SHELL
+    set -e
     cd ~
 
     # Install necessary packages
@@ -41,6 +42,91 @@ Vagrant.configure(2) do |config|
     git config -f gerrit/etc/gerrit.config auth.type DEVELOPMENT_BECOME_ANY_ACCOUNT
     git config -f gerrit/etc/gerrit.config plugins.allowRemoteAdmin true
     gerrit/bin/gerrit.sh restart
+
+    # Configure Gerrit admin user
+
+    # Get GerritAccount cookie
+    GERRIT_USER_ID=$(curl -X POST "http://localhost:8080/login/%23%2F?action=create_account" \
+        -D - -o /dev/null -s \
+        | grep 'Set-Cookie:' \
+        | sed 's/Set-Cookie: GerritAccount=//g' \
+        | cut -b 1-34)
+
+    # Get xGerritAuth token
+    AUTH_KEY=$(curl "http://localhost:8080/" -s -H "Cookie: GerritAccount=$GERRIT_USER_ID" \
+        | grep -o -E 'xGerritAuth=\"[^\"]+\"' \
+        | sed 's/"//g' \
+        | sed 's/xGerritAuth=//g')
+
+    # Change username to "admin"
+    curl -X POST "http://localhost:8080/gerrit_ui/rpc/AccountSecurity" -s \
+        -H "Accept: application/json" \
+        -H "Content-Type: application/json" \
+        -d '{\"jsonrpc\": \"2.0\", \"method\": \"changeUserName\", \"params\": [\"admin\"], \"xsrfKey\": \"'"$AUTH_KEY"'\"}' \
+        -H "Cookie: GerritAccount=$GERRIT_USER_ID"
+
+    # Change full name to "Administrator"
+    curl -X POST "http://localhost:8080/gerrit_ui/rpc/AccountSecurity" -s \
+        -H "Accept: application/json" \
+        -H "Content-Type: application/json" \
+        -d '{\"jsonrpc\": \"2.0\", \"method\": \"updateContact\", \"params\": [\"Administrator\", null, null], \"xsrfKey\": \"'"$AUTH_KEY"'\"}' \
+        -H "Cookie: GerritAccount=$GERRIT_USER_ID"
+
+    # Change email to "admin@test.com"
+    curl -X PUT "http://localhost:8080/accounts/self/emails/admin%40test.com" -s \
+        -H "Cookie: GerritAccount=$GERRIT_USER_ID" \
+        -H "X-Gerrit-Auth: $AUTH_KEY"
+
+    # Upload id_admin.pub SSH key
+    curl -X POST "http://localhost:8080/accounts/self/sshkeys" -s \
+        -H "Cookie: GerritAccount=$GERRIT_USER_ID" \
+        -H "X-Gerrit-Auth: $AUTH_KEY" \
+        -d "$(cat ~/.ssh/id_admin.pub)"
+
+    # Set up id_admin ssh key
+    cd ~
+    eval `ssh-agent -s`
+    ssh-add ~/.ssh/id_admin
+
+    # Create jenkins Gerrit account
+    cat ~/.ssh/id_jenkins.pub | ssh -p 29418 -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no \
+        admin@localhost gerrit create-account jenkins --email jenkins@test.com --full-name Jenkins --ssh-key -
+
+    # Create jenkins-ro Gerrit group
+    ssh -p 29418 -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no \
+        admin@localhost gerrit create-group jenkins-ro \
+        --member jenkins --description "'Users with permissions needed for Gerrit-CI'"
+
+    JENKINS_RO_UUID=`ssh -p 29418 -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no \
+        admin@localhost gerrit ls-groups -v | grep jenkins-ro | cut -f 2`
+    echo $JENKINS_RO_UUID
+
+    # Make an executable file with preset ssh options for git fetch and push
+    echo 'ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no $*' > ~/ssh
+    chmod +x ~/ssh
+
+    # Install Verified Label
+    git config --global user.name "Administrator"
+    git config --global user.email admin@test.com
+    mkdir tmp
+    cd tmp
+    git init
+    git remote add origin ssh://admin@localhost:29418/All-Projects
+    GIT_SSH='/home/vagrant/ssh' git fetch origin refs/meta/config:refs/remotes/origin/meta/config
+    git checkout meta/config
+    echo "$JENKINS_RO_UUID	jenkins-ro" >> groups
+    git config -f project.config --add label.Verified.function MaxWithBlock
+    git config -f project.config --add label.Verified.value '-1 Fails'
+    git config -f project.config --add label.Verified.value '0 No score'
+    git config -f project.config --add label.Verified.value '+1 Verified'
+    git config -f project.config --add capability.streamEvents "group jenkins-ro"
+    git config -f project.config --add access.refs/heads/*.label-Verified "-1..+1 group Administrators"
+    git config -f project.config --add access.refs/heads/*.label-Verified "-1..+1 group Project Owners"
+    git config -f project.config --add access.refs/heads/*.label-Verified "-1..+1 group jenkins-ro"
+    git commit -a -m "Install Verified label"
+    GIT_SSH='/home/vagrant/ssh' git push origin refs/heads/meta/config:refs/meta/config
+    cd ..
+    rm -rf ./tmp
 
     # Install and run Jenkins
     curl -L -O http://mirrors.jenkins-ci.org/war/latest/jenkins.war
