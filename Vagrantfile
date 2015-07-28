@@ -128,9 +128,54 @@ Vagrant.configure(2) do |config|
     cd ..
     rm -rf ./tmp
 
-    # Install and run Jenkins
+    # Download Jenkins
     curl -L -O http://mirrors.jenkins-ci.org/war/latest/jenkins.war
+
+    mkdir -p .jenkins/plugins
+
+    # Install build-timeout plugin and dependencies
+    wget http://updates.jenkins-ci.org/latest/build-timeout.hpi -O .jenkins/plugins/build-timeout.hpi
+    wget http://updates.jenkins-ci.org/latest/token-macro.hpi -O .jenkins/plugins/token-macro.hpi
+
+    # Install gerrit-trigger plugin
+    wget http://updates.jenkins-ci.org/latest/gerrit-trigger.hpi -O .jenkins/plugins/gerrit-trigger.hpi
+
+    # Install git plugin and dependencies
+    wget http://updates.jenkins-ci.org/latest/git.hpi -O .jenkins/plugins/git.hpi
+    wget http://updates.jenkins-ci.org/latest/git-client.hpi -O .jenkins/plugins/git-client.hpi
+    wget http://updates.jenkins-ci.org/latest/scm-api.hpi -O .jenkins/plugins/scm-api.hpi
+
+    # Start Jenkins
     nohup java -jar jenkins.war --httpPort=8000 > jenkins.log 2>&1 &
     echo $! > jenkins.pid
+
+    # Do nothing while Jenkins is starting up
+    while [ -n "$(curl http://localhost:8000 2>&1 | grep -E '(Connection refused|Please wait while Jenkins is getting ready to work)')" ]; do
+        echo "Waiting for Jenkins..."
+        sleep 2
+    done
+
+    # Wait for Jenkins to finish downloading plugin metadata
+    while [ -z "$(tail jenkins.log | grep 'Finished Download metadata.')" ]; do
+        echo "Waiting for plugin metadata download..."
+        sleep 2
+    done
+
+    # Download jenkins-cli
+    wget http://localhost:8000/jnlpJars/jenkins-cli.jar -O jenkins-cli.jar
+
+    # Update plugins that are out of date
+    for f in $(java -jar jenkins-cli.jar -s http://localhost:8000 list-plugins | grep -e ')$' | awk '{ print $1 }'); do
+        java -jar jenkins-cli.jar -s http://localhost:8000 install-plugin "$f"
+    done
+
+    # Configure gerrit-trigger plugin and ssh credentials
+    cp /vagrant/resources/gerrit-trigger.xml ~/.jenkins
+    cp /vagrant/resources/credentials.xml ~/.jenkins
+
+    java -jar jenkins-cli.jar -s http://localhost:8000 restart
+
+    echo "Gerrit started at http://localhost:8080"
+    echo "Jenkins started at http://localhost:8000"
   SHELL
 end
