@@ -145,6 +145,10 @@ Vagrant.configure(2) do |config|
     wget http://updates.jenkins-ci.org/latest/git-client.hpi -O .jenkins/plugins/git-client.hpi
     wget http://updates.jenkins-ci.org/latest/scm-api.hpi -O .jenkins/plugins/scm-api.hpi
 
+    # Install junit stuff
+    wget http://updates.jenkins-ci.org/latest/junit.hpi -O .jenkins/plugins/junit.hpi
+    wget http://updates.jenkins-ci.org/latest/xunit.hpi -O .jenkins/plugins/xunit.hpi
+
     # Start Jenkins
     nohup java -jar jenkins.war --httpPort=8000 > jenkins.log 2>&1 &
     echo $! > jenkins.pid

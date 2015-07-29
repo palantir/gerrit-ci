@@ -142,6 +142,7 @@ public class JobsServlet extends HttpServlet {
             res.setStatus(400);
             return;
         }
+
         String verifyBranchRegex = requestParams.get("verifyBranchRegex").getAsString();
         if(verifyBranchRegex.startsWith("refs/heads/")) {
             verifyBranchRegex = verifyBranchRegex.replace("refs/heads/", "(?!refs/)");
@@ -193,6 +194,23 @@ public class JobsServlet extends HttpServlet {
         }
         params.put("timeoutMinutes", requestParams.get("timeoutMinutes").getAsJsonObject().get("b")
             .getAsInt());
+
+
+        // Add junit post build action
+        if(!requestParams.has("junitEnabled")) {
+            res.setStatus(400);
+            return;
+        }
+
+        params.put("junitEnabled", requestParams.get("junitEnabled").getAsJsonObject().get("b")
+           .getAsBoolean());
+
+        // Path to publish junit test results
+        if(!requestParams.has("junitPath")) {
+            res.setStatus(400);
+            return;
+        }
+        params.put("junitPath", requestParams.get("junitPath").getAsString());
 
         // TODO: Replace this with the request body
         JenkinsServerConfiguration jsc = new JenkinsServerConfiguration();

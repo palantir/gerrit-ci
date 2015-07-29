@@ -38,7 +38,6 @@ public class JenkinsJobParser {
      */
     public static JsonObject parseJenkinsJob(String projectName, JenkinsServerConfiguration jsc) {
         JsonObject settings = new JsonObject();
-
         for(JobType type: JobType.values()) {
             String jobName = type.getJobName(projectName);
             boolean exists = JenkinsProvider.jobExists(jsc, jobName);
@@ -48,6 +47,13 @@ public class JenkinsJobParser {
                 settings.addProperty(String.format("%sBranchRegex", type), getBranchRegex(jobXml));
                 settings.addProperty(String.format("%sCommand", type), getCommand(jobXml));
                 settings.addProperty("timeoutMinutes", getTimeoutMinutes(jobXml));
+                String junitPath = getJunitPath(jobXml);
+                if (junitPath == "") {
+                    settings.addProperty("junitEnabled", false);
+                } else {
+                    settings.addProperty("junitEnabled", true);
+                    settings.addProperty("junitPath", junitPath);
+                }
             }
         }
 
@@ -86,5 +92,22 @@ public class JenkinsJobParser {
                 .getElementsByTag(TIMEOUT_TAG).get(0)
                 .getElementsByTag("strategy").get(0)
                 .getElementsByTag("timeoutMinutes").get(0).html());
+    }
+
+    private static String getJunitPath(String jobXml){
+        boolean junitEnabled = Jsoup.parse(jobXml, "", Parser.xmlParser())
+                .getElementsByTag("publishers").size()>0 && Jsoup.parse(jobXml, "", Parser.xmlParser())
+                .getElementsByTag("publishers").get(0)
+                .getElementsByTag("xunit").size()>0;
+                if(junitEnabled){
+                    String junitPath = Jsoup.parse(jobXml, "", Parser.xmlParser())
+                            .getElementsByTag("publishers").get(0)
+                            .getElementsByTag("xunit").get(0)
+                            .getElementsByTag("types").get(0)
+                            .getElementsByTag("JUnitType").get(0)
+                            .getElementsByTag("pattern").get(0).html();
+                    return junitPath;
+                }
+                return "";
     }
 }

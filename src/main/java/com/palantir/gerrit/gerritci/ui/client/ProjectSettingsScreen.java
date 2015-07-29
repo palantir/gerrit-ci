@@ -73,6 +73,16 @@ public class ProjectSettingsScreen extends PluginEntryPoint {
     private TextBox timeoutMinutes;
 
     /**
+     * TextBox that contains the JUnit test directory
+     */
+    private TextBox junitPath;
+
+    /**
+     * CheckBox that will enable or disable JUnit test publishing
+     */
+    private CheckBox junitEnabled;
+
+    /**
      * Button that saves the project configuration and creates the jobs
      */
     private Button saveButton;
@@ -102,6 +112,8 @@ public class ProjectSettingsScreen extends PluginEntryPoint {
                 publishJobEnabled = new CheckBox("Enable Publish Jobs");
                 publishBranchRegex = new TextBox();
                 publishCommand = new TextBox();
+                junitEnabled = new CheckBox("Publish JUnit test result report");
+                junitPath = new TextBox();
                 timeoutMinutes = new TextBox();
                 saveButton = new Button("Save & Update");
 
@@ -255,6 +267,48 @@ public class ProjectSettingsScreen extends PluginEntryPoint {
                     .setInnerText("Jenkins will wait this many minutes before terminating the build");
                 verticalPanel.add(HTML.wrap(timeoutMinutesDescription));
 
+                // JUnit Post Build Tasks
+                HeadingElement junitHeader = Document.get().createHElement(2);
+                junitHeader.setInnerText("JUnit");
+                junitHeader.setClassName("subsection");
+                verticalPanel.add(HTML.wrap(junitHeader));
+
+                // enableJunit
+                junitEnabled.setValue(false);
+                junitEnabled.setEnabled(false);
+                junitEnabled.addClickHandler(new ClickHandler() {
+
+                    @Override
+                    public void onClick(ClickEvent event) {
+                        updateWidgetEnablity();
+                    }
+                });
+                verticalPanel.add(junitEnabled);
+                ParagraphElement enableJunitDescription = Document.get().createPElement();
+                enableJunitDescription.setClassName("description");
+                enableJunitDescription
+                    .setInnerText("Check this checkbox to enable publishing the report of JUnit test results");
+                verticalPanel.add(HTML.wrap(enableJunitDescription));
+
+                // junitResultsLocation
+                ParagraphElement junitPathLabel = Document.get().createPElement();
+                junitPathLabel.setInnerText("junit test results location");
+                junitPathLabel.setClassName("label");
+                verticalPanel.add(HTML.wrap(junitPathLabel));
+                junitPath.setText("build/test-results/*.xml");
+                junitPath.addKeyPressHandler(new KeyPressHandler() {
+                    @Override
+                    public void onKeyPress(KeyPressEvent event) {
+                        event.stopPropagation();
+                    }
+                });
+                verticalPanel.add(junitPath);
+                ParagraphElement junitPathDescription = Document.get().createPElement();
+                junitPathDescription.setClassName("description");
+                junitPathDescription
+                    .setInnerText("Path to use for junit results (e.g. build/test-results/*.xml");
+                verticalPanel.add(HTML.wrap(junitPathDescription));
+
                 // saveButton
                 saveButton.addClickHandler(new ClickHandler() {
 
@@ -272,6 +326,8 @@ public class ProjectSettingsScreen extends PluginEntryPoint {
                         params.put("publishCommand", publishCommand.getText());
 
                         params.put("timeoutMinutes", Integer.valueOf(timeoutMinutes.getText()));
+                        params.put("junitEnabled", junitEnabled.getValue());
+                        params.put("junitPath", junitPath.getText());
 
                         new RestApi("plugins").id("gerrit-ci").view("jobs")
                             .view(encodedProjectName)
@@ -313,6 +369,7 @@ public class ProjectSettingsScreen extends PluginEntryPoint {
 
                             verifyJobEnabled.setValue(config.getVerifyJobEnabled());
                             publishJobEnabled.setValue(config.getPublishJobEnabled());
+                            junitEnabled.setValue(config.getJunitEnabled());
 
                             String verifyBranchRegexString = config.getVerifyBranchRegex();
                             String verifyCommandString = config.getVerifyCommand();
@@ -321,6 +378,8 @@ public class ProjectSettingsScreen extends PluginEntryPoint {
                             String publishCommandString = config.getPublishCommand();
 
                             Integer timeoutMinutesInteger = config.getTimeoutMinutes();
+
+                            String junitPathString = config.getJunitPath();
 
                             if(verifyBranchRegexString != null) {
                                 verifyBranchRegex.setText(verifyBranchRegexString);
@@ -342,8 +401,14 @@ public class ProjectSettingsScreen extends PluginEntryPoint {
                                 timeoutMinutes.setText(String.valueOf(timeoutMinutesInteger));
                             }
 
+
+                            if(junitPathString != null) {
+                                junitPath.setText(junitPathString);
+                            }
+
                             verifyJobEnabled.setEnabled(true);
                             publishJobEnabled.setEnabled(true);
+                            junitEnabled.setEnabled(true);
                             saveButton.setEnabled(true);
                             updateWidgetEnablity();
                         }
@@ -363,8 +428,8 @@ public class ProjectSettingsScreen extends PluginEntryPoint {
 
         publishBranchRegex.setEnabled(publishJobEnabled.getValue());
         publishCommand.setEnabled(publishJobEnabled.getValue());
-
         timeoutMinutes.setEnabled(verifyJobEnabled.getValue() || publishJobEnabled.getValue());
+        junitPath.setEnabled(junitEnabled.getValue());
     }
 
     /**
