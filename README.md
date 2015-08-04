@@ -2,6 +2,98 @@
 
 > Plugin for Gerrit enabling self-service continuous integration workflows with Jenkins.
 
+The intent of Gerrit-CI is to add a self-service CI dashboard to the Gerrit user interface. This
+will enable project owners to create customized Jenkins jobs with a few simple clicks. Gerrit-CI was
+inspired by [Stashbot](https://github.com/palantir/stashbot) and has similar goals, although there
+are differences in the way it operates.
+
+## User Guide
+
+### Job Types
+
+There are currently two job types, Verify and Publish. Each has a specific purpose, and it is
+important to follow the guidelines below when configuring your jobs and writing build scripts.
+
+#### Verify
+
+Verify jobs are intended to build the project's code, run any tests, and report back with
+success/failure. They will be triggered whenever a new change is created or a new patch set is
+uploaded to an existing change, for branches matching the configured verify branch regular
+expression. They will also be triggered if a draft change or patch set is uploaded to these
+branches.
+
+Jenkins will comment on the change with a link to the build when it starts running. When it is
+finished, Jenkins will comment with the results of the build. Additionally, Jenkins will give a
+`+1` value for the `Verified` label if the build was successful and a `-1` value if the build
+failed (this can be configured in the settings for the Gerrit-trigger plugin on the Jenkins server).
+
+The name of the created job on the Jenkins server will be `gerrit-ci_<projectName>_verify`, where
+`<projectName>` is the name of your project with all forward slashes converted to underscores. For
+example, the verify job created for `public/gerrit-ci` will be named
+`gerrit-ci_public_gerrit-ci_verify`.
+
+#### Publish
+
+Publish jobs are intended to do everything a verify job does in addition to publishing a resultant
+artifact. For branches matching the publish branch regular expression, publish jobs will be
+triggered when a ref (e.g. branch or tag) is updated.
+
+The name of the created job on the Jenkins server will be `gerrit-ci_<projectName>_publish`, where
+`<projectName>` is the name of your project with all forward slashes converted to underscores. For
+example, the publish job created for `public/gerrit-ci` will be named
+`gerrit-ci_public_gerrit-ci_publish`.
+
+### Configuration Options
+
+![Gerrit Top Menu](https://cloud.githubusercontent.com/assets/1930963/8972296/90febe3c-360d-11e5-8bcc-8c8ca4ba54cd.png)
+
+To get to the configuration screen for your project, follow these steps:
+
+0. Click `Projects` in the Gerrit top menu
+0. Click `List` and find your project
+0. Now that your project is selected, click `Gerrit-CI` in the submenu at the top of the screen.
+This will bring you to the Gerrit-CI settings page for your project.
+
+##### Job Enabled
+
+When this checkbox is checked, a verify or publish job (depending on which checkbox was checked)
+will be created on the Jenkins server for the current project. If the box is unchecked and the
+configuration is saved, the job that was previously present on the Jenkins server will be deleted.
+
+##### Branch Regex
+
+The branch regex text box specifies a regular expression that should be used to select branches to
+trigger Jenkins builds for. These expressions should match the full ref name (e.g.
+`refs/heads/master`, `refs/sandbox/palantir`, or `refs/heads/develop`). For verify jobs, the default
+regex is `.*`. This matches every branch that has been created for the project and will run a
+verify build when any of the branches are updated with new changes or patch sets. The default regex
+for publish jobs is `refs/heads/(develop|master)`. This matches only two branches, `develop` and
+`master`. The branches matched by the publish branch regex should be a subset of the branches
+matched by the verify branch regex. This way, all changes that will be merged and published will
+get verified first.
+
+##### Run Command
+
+The build will run the command placed here after preparing the build node. It will also be the
+last command run, so the command should return `0` for a successful build and nonzero for a failed
+build. The default command for verify jobs is `./scripts/verify.sh` and the default command for
+publish jobs is `./scripts/publish.sh`. This is encouraging the idea that your build commands
+should not be entered directly into the text boxes. Instead, the build commands for your project
+should be placed into scripts that are version controlled with the rest of the project.
+
+##### Timeouts Enabled
+
+If this checkbox is checked, the [build-timeout plugin](https://wiki.jenkins-ci.org/display/JENKINS/Build-timeout+Plugin)
+will be enabled for all enabled jobs (if both the verify and publish jobs are enabled, the
+timeout will be enabled for both). This plugin allows you to automatically abort a build if it's
+taking too long. Once the timeout is reached, Jenkins behaves as if an invisible hand has clicked
+the "abort build" button.
+
+##### Timeout Minutes
+
+This specifies the number of minutes to wait before automatically aborting the build. This will
+have no effect if the timeouts enabled checkbox is unchecked.
+
 ## Development
 
 ### Requirements
