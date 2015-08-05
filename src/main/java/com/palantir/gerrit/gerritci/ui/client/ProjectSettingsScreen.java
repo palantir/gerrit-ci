@@ -208,8 +208,8 @@ public class ProjectSettingsScreen extends PluginEntryPoint {
                 ParagraphElement publishBranchRegexDescription = Document.get().createPElement();
                 publishBranchRegexDescription.setClassName("description");
                 publishBranchRegexDescription
-                    .setInnerText("Branches matching this regex will have the publish job command" +
-                            " run on them by Jenkins. This regex must begin with \"refs/heads/\"");
+                    .setInnerHTML("Branches matching this regex will have the publish job command" +
+                            " run on them by Jenkins.<br/>This regex must begin with \"refs/heads/\"");
                 verticalPanel.add(HTML.wrap(publishBranchRegexDescription));
 
                 // publishCommand
@@ -252,7 +252,7 @@ public class ProjectSettingsScreen extends PluginEntryPoint {
                 ParagraphElement timeoutMinutesDescription = Document.get().createPElement();
                 timeoutMinutesDescription.setClassName("description");
                 timeoutMinutesDescription
-                    .setInnerText("Jenkins will wait this many minutes before terminating the job's run");
+                    .setInnerText("Jenkins will wait this many minutes before terminating the build");
                 verticalPanel.add(HTML.wrap(timeoutMinutesDescription));
 
                 // saveButton
