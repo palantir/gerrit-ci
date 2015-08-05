@@ -186,14 +186,6 @@ public class JobsServlet extends HttpServlet {
         }
         params.put("publishCommand", requestParams.get("publishCommand").getAsString());
 
-        // timeoutEnabled
-        if(!requestParams.has("timeoutEnabled")) {
-            res.setStatus(400);
-            return;
-        }
-        params.put("timeoutEnabled", requestParams.get("timeoutEnabled").getAsJsonObject().get("b")
-            .getAsBoolean());
-
         // timeoutMinutes
         if(!requestParams.has("timeoutMinutes")) {
             res.setStatus(400);

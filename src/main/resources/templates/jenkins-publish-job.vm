@@ -124,13 +124,11 @@ ${publishCommand}
         <hudson.plugins.timestamper.TimestamperBuildWrapper
             plugin="timestamper@1.5.14" />
 
-#if ( $timeoutEnabled )
         <hudson.plugins.build__timeout.BuildTimeoutWrapper plugin="build-timeout@1.14.1">
             <strategy class="hudson.plugins.build_timeout.impl.AbsoluteTimeOutStrategy">
                 <timeoutMinutes>$timeoutMinutes</timeoutMinutes>
             </strategy>
             <operationList/>
         </hudson.plugins.build__timeout.BuildTimeoutWrapper>
-#end
     </buildWrappers>
 </project>

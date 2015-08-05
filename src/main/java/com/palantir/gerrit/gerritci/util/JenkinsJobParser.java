@@ -66,17 +66,11 @@ public class JenkinsJobParser {
                     .get(0).html();
             settings.addProperty("verifyCommand", verifyCommand.replace(COMMAND_PREFIX, ""));
 
-            Elements timeoutTags =
-                Jsoup.parse(verifyJobXml, "", Parser.xmlParser()).getElementsByTag(TIMEOUT_TAG);
-            boolean timeoutEnabled = timeoutTags.size() > 0;
-            settings.addProperty("timeoutEnabled", timeoutEnabled);
-
-            if(timeoutEnabled) {
-                settings.addProperty("timeoutMinutes",
-                                     Integer.valueOf(timeoutTags.get(0)
-                                         .getElementsByTag("strategy").get(0)
-                                         .getElementsByTag("timeoutMinutes").get(0).html()));
-            }
+            settings.addProperty("timeoutMinutes", Integer.valueOf(
+                Jsoup.parse(verifyJobXml, "", Parser.xmlParser())
+                    .getElementsByTag(TIMEOUT_TAG).get(0)
+                    .getElementsByTag("strategy").get(0)
+                    .getElementsByTag("timeoutMinutes").get(0).html()));
         }
 
         boolean publishExists = JenkinsProvider.jobExists(jsc, publishJobName);
@@ -101,16 +95,12 @@ public class JenkinsJobParser {
                     .get(0).html();
             settings.addProperty("publishCommand", publishCommand.replace(COMMAND_PREFIX, ""));
 
-            Elements timeoutTags =
-                Jsoup.parse(publishJobXml, "", Parser.xmlParser()).getElementsByTag(TIMEOUT_TAG);
-            boolean timeoutEnabled = timeoutTags.size() > 0;
-            settings.addProperty("timeoutEnabled", timeoutEnabled);
-
-            if(timeoutEnabled) {
-                settings.addProperty("timeoutMinutes",
-                                     Integer.valueOf(timeoutTags.get(0)
-                                         .getElementsByTag("strategy").get(0)
-                                         .getElementsByTag("timeoutMinutes").get(0).html()));
+            if(!settings.has("timeoutMinutes")) {
+                settings.addProperty("timeoutMinutes", Integer.valueOf(
+                    Jsoup.parse(publishJobXml, "", Parser.xmlParser())
+                        .getElementsByTag(TIMEOUT_TAG).get(0)
+                        .getElementsByTag("strategy").get(0)
+                        .getElementsByTag("timeoutMinutes").get(0).html()));
             }
         }
 
