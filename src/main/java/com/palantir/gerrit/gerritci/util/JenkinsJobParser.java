@@ -21,9 +21,6 @@ public class JenkinsJobParser {
 
     private static final String TIMEOUT_TAG = "hudson.plugins.build__timeout.BuildTimeoutWrapper";
 
-    private static final String COMMAND_PREFIX =
-        "#!/bin/bash set -x set -e date git reset --hard git clean -fdx ";
-
     // Suppress default constructor for noninstantiability
     private JenkinsJobParser() {}
 
@@ -84,7 +81,7 @@ public class JenkinsJobParser {
                 .getElementsByTag("builders").get(0)
                 .getElementsByTag("hudson.tasks.Shell").get(0)
                 .getElementsByTag("command").get(0).html();
-        return command.replace(COMMAND_PREFIX, "");
+        return command.replaceAll("(?s)^.*### END PREBUILD-COMMANDS ###\\s+", "");
     }
 
     private static Integer getTimeoutMinutes(String jobXml) {

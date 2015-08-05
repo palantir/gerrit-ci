@@ -1,11 +1,14 @@
 package com.palantir.gerrit.gerritci.servlets;
 
+import java.io.File;
 import java.io.IOException;
+import java.io.StringWriter;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.jar.JarFile;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -15,6 +18,7 @@ import com.google.gerrit.common.data.GerritConfig;
 import com.google.gerrit.reviewdb.client.Project.NameKey;
 import com.google.gerrit.server.CurrentUser;
 import com.google.gerrit.server.config.CanonicalWebUrl;
+import com.google.gerrit.server.config.SitePaths;
 import com.google.gerrit.server.project.NoSuchProjectException;
 import com.google.gerrit.server.project.ProjectControl;
 import com.google.gson.JsonElement;
@@ -27,6 +31,7 @@ import com.palantir.gerrit.gerritci.constants.JobType;
 import com.palantir.gerrit.gerritci.models.JenkinsServerConfiguration;
 import com.palantir.gerrit.gerritci.providers.JenkinsProvider;
 import com.palantir.gerrit.gerritci.util.JenkinsJobParser;
+import org.apache.commons.io.IOUtils;
 
 @Singleton
 public class JobsServlet extends HttpServlet {
@@ -35,13 +40,16 @@ public class JobsServlet extends HttpServlet {
     private ProjectControl.Factory projectControlFactory;
     private GerritConfig gerritConfig;
     private String canonicalWebUrl;
+    private SitePaths sitePaths;
 
     @Inject
     public JobsServlet(final ProjectControl.Factory projectControlFactory,
-        final GerritConfig gerritConfig, @CanonicalWebUrl String canonicalWebUrl) {
+                       final GerritConfig gerritConfig, @CanonicalWebUrl String canonicalWebUrl,
+                       final SitePaths sitePaths) {
         this.projectControlFactory = projectControlFactory;
         this.gerritConfig = gerritConfig;
         this.canonicalWebUrl = canonicalWebUrl;
+        this.sitePaths = sitePaths;
     }
 
     private int getResponseCode(String projectName) {
@@ -128,6 +136,17 @@ public class JobsServlet extends HttpServlet {
 
         Map<String, Object> params = new HashMap<String, Object>();
         params.put("projectName", projectName);
+
+        JarFile jarFile = new JarFile(sitePaths.plugins_dir.getAbsoluteFile() + File.separator +
+                "gerrit-ci.jar");
+        StringWriter writer = new StringWriter();
+        IOUtils.copy(jarFile.getInputStream(jarFile.getEntry("scripts/prebuild-commands.sh")),
+                writer);
+
+        // We must escape special characters as this will be rendered into XML
+        String prebuildScript =
+                writer.toString().replace("&", "&amp;").replace(">", "&gt;").replace("<", "&lt;");
+        params.put("cleanCommands", prebuildScript);
 
         // verifyJobEnabled
         if(!requestParams.has("verifyJobEnabled")) {
