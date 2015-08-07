@@ -1,4 +1,4 @@
-# Gerrit-CI [![Issues](http://img.shields.io/github/issues/palantir/gerrit-ci.svg?style=flat)](https://github.com/palantir/gerrit-ci/issues)
+# Gerrit-CI [![BuildStatus](http://img.shields.io/travis/palantir/gerrit-ci.svg?style=flat)](https://travis-ci.org/palantir/gerrit-ci) [![Issues](http://img.shields.io/github/issues/palantir/gerrit-ci.svg?style=flat)](https://github.com/palantir/gerrit-ci/issues)
 
 > Plugin for Gerrit enabling self-service continuous integration workflows with Jenkins.
 
