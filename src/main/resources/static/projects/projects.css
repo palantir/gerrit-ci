@@ -13,9 +13,7 @@
 
 .gerrit-ci .gwt-TextBox {
     margin-left: 20px;
-    width: 200px;
-    height: 25px;
-    border-radius: 3px;
+    width: 250px;
 }
 
 .gerrit-ci .label {

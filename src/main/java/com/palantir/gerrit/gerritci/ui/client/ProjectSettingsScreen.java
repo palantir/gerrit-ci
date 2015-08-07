@@ -68,11 +68,6 @@ public class ProjectSettingsScreen extends PluginEntryPoint {
     private TextBox publishCommand;
 
     /**
-     * CheckBox that will enable or disable timeouts for jobs
-     */
-    private CheckBox timeoutEnabled;
-
-    /**
      * TextBox that contains the number of minutes to wait for the timeout
      */
     private TextBox timeoutMinutes;
@@ -107,7 +102,6 @@ public class ProjectSettingsScreen extends PluginEntryPoint {
                 publishJobEnabled = new CheckBox("Enable Publish Jobs");
                 publishBranchRegex = new TextBox();
                 publishCommand = new TextBox();
-                timeoutEnabled = new CheckBox("Enable Timeouts");
                 timeoutMinutes = new TextBox();
                 saveButton = new Button("Save & Update");
 
@@ -214,8 +208,8 @@ public class ProjectSettingsScreen extends PluginEntryPoint {
                 ParagraphElement publishBranchRegexDescription = Document.get().createPElement();
                 publishBranchRegexDescription.setClassName("description");
                 publishBranchRegexDescription
-                    .setInnerText("Branches matching this regex will have the publish job command" +
-                            " run on them by Jenkins. This regex must begin with \"refs/heads/\"");
+                    .setInnerHTML("Branches matching this regex will have the publish job command" +
+                            " run on them by Jenkins.<br/>This regex must begin with \"refs/heads/\"");
                 verticalPanel.add(HTML.wrap(publishBranchRegexDescription));
 
                 // publishCommand
@@ -242,29 +236,6 @@ public class ProjectSettingsScreen extends PluginEntryPoint {
                 generalHeader.setInnerText("General Settings");
                 verticalPanel.add(HTML.wrap(generalHeader));
 
-                // timeoutHeader
-                HeadingElement timeoutHeader = Document.get().createHElement(2);
-                timeoutHeader.setInnerText("Timeouts");
-                timeoutHeader.setClassName("subsection");
-                verticalPanel.add(HTML.wrap(timeoutHeader));
-
-                // timeoutEnabled
-                timeoutEnabled.setValue(false);
-                timeoutEnabled.setEnabled(false);
-                timeoutEnabled.addClickHandler(new ClickHandler() {
-
-                    @Override
-                    public void onClick(ClickEvent event) {
-                        updateWidgetEnablity();
-                    }
-                });
-                verticalPanel.add(timeoutEnabled);
-                ParagraphElement timeoutEnabledDescription = Document.get().createPElement();
-                timeoutEnabledDescription.setClassName("description");
-                timeoutEnabledDescription
-                    .setInnerText("Check this checkbox to enable job timeouts for your project");
-                verticalPanel.add(HTML.wrap(timeoutEnabledDescription));
-
                 // timeoutMinutes
                 ParagraphElement timeoutMinutesLabel = Document.get().createPElement();
                 timeoutMinutesLabel.setInnerText("Timeout minutes");
@@ -281,7 +252,7 @@ public class ProjectSettingsScreen extends PluginEntryPoint {
                 ParagraphElement timeoutMinutesDescription = Document.get().createPElement();
                 timeoutMinutesDescription.setClassName("description");
                 timeoutMinutesDescription
-                    .setInnerText("Jenkins will wait this many minutes before terminating the job's run");
+                    .setInnerText("Jenkins will wait this many minutes before terminating the build");
                 verticalPanel.add(HTML.wrap(timeoutMinutesDescription));
 
                 // saveButton
@@ -300,7 +271,6 @@ public class ProjectSettingsScreen extends PluginEntryPoint {
                         params.put("publishBranchRegex", publishBranchRegex.getText());
                         params.put("publishCommand", publishCommand.getText());
 
-                        params.put("timeoutEnabled", timeoutEnabled.getValue());
                         params.put("timeoutMinutes", Integer.valueOf(timeoutMinutes.getText()));
 
                         new RestApi("plugins").id("gerrit-ci").view("jobs")
@@ -343,7 +313,6 @@ public class ProjectSettingsScreen extends PluginEntryPoint {
 
                             verifyJobEnabled.setValue(config.getVerifyJobEnabled());
                             publishJobEnabled.setValue(config.getPublishJobEnabled());
-                            timeoutEnabled.setValue(config.getTimeoutEnabled());
 
                             String verifyBranchRegexString = config.getVerifyBranchRegex();
                             String verifyCommandString = config.getVerifyCommand();
@@ -375,7 +344,6 @@ public class ProjectSettingsScreen extends PluginEntryPoint {
 
                             verifyJobEnabled.setEnabled(true);
                             publishJobEnabled.setEnabled(true);
-                            timeoutEnabled.setEnabled(true);
                             saveButton.setEnabled(true);
                             updateWidgetEnablity();
                         }
@@ -396,7 +364,7 @@ public class ProjectSettingsScreen extends PluginEntryPoint {
         publishBranchRegex.setEnabled(publishJobEnabled.getValue());
         publishCommand.setEnabled(publishJobEnabled.getValue());
 
-        timeoutMinutes.setEnabled(timeoutEnabled.getValue());
+        timeoutMinutes.setEnabled(verifyJobEnabled.getValue() || publishJobEnabled.getValue());
     }
 
     /**

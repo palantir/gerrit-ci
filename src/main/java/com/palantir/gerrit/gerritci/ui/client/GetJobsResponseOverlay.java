@@ -34,10 +34,6 @@ public class GetJobsResponseOverlay extends JavaScriptObject {
                                                   return this.publishCommand;
                                                   }-*/;
 
-    public final native Boolean getTimeoutEnabled()/*-{
-                                                   return this.timeoutEnabled;
-                                                   }-*/;
-
     public final native Integer getTimeoutMinutes()/*-{
                                                    return this.timeoutMinutes;
                                                    }-*/;

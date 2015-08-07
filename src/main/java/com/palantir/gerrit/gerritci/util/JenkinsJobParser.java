@@ -2,7 +2,6 @@ package com.palantir.gerrit.gerritci.util;
 
 import org.jsoup.Jsoup;
 import org.jsoup.parser.Parser;
-import org.jsoup.select.Elements;
 
 import com.google.gson.JsonObject;
 import com.palantir.gerrit.gerritci.constants.JobType;
@@ -40,80 +39,52 @@ public class JenkinsJobParser {
     public static JsonObject parseJenkinsJob(String projectName, JenkinsServerConfiguration jsc) {
         JsonObject settings = new JsonObject();
 
-        String verifyJobName = JobType.VERIFY.getJobName(projectName);
-        String publishJobName = JobType.PUBLISH.getJobName(projectName);
-
-        boolean verifyExists = JenkinsProvider.jobExists(jsc, verifyJobName);
-        settings.addProperty("verifyJobEnabled", verifyExists);
-        if(verifyExists) {
-            String verifyJobXml = JenkinsProvider.getJobXml(jsc, verifyJobName);
-
-            String verifyBranchRegex = Jsoup.parse(verifyJobXml, "", Parser.xmlParser())
-                                     .getElementsByTag("gerritProjects").get(0)
-                                     .getElementsByTag(GERRITPROJECT_TAG).get(0)
-                                     .getElementsByTag("branches").get(0)
-                                     .getElementsByTag(BRANCH_TAG).get(0)
-                                     .getElementsByTag("pattern").get(0).html();
-            verifyBranchRegex = verifyBranchRegex.substring(1,verifyBranchRegex.length() - 1);
-            verifyBranchRegex = verifyBranchRegex.replace("(?!refs/meta/)", "");
-            verifyBranchRegex = verifyBranchRegex.replace("(?!refs/)", "refs/heads/");
-            settings.addProperty("verifyBranchRegex", verifyBranchRegex);
-
-            String verifyCommand =
-                Jsoup.parse(verifyJobXml, "", Parser.xmlParser()).getElementsByTag("project")
-                    .get(0).getElementsByTag("builders").get(0)
-                    .getElementsByTag("hudson.tasks.Shell").get(0).getElementsByTag("command")
-                    .get(0).html();
-            settings.addProperty("verifyCommand", verifyCommand.replace(COMMAND_PREFIX, ""));
-
-            Elements timeoutTags =
-                Jsoup.parse(verifyJobXml, "", Parser.xmlParser()).getElementsByTag(TIMEOUT_TAG);
-            boolean timeoutEnabled = timeoutTags.size() > 0;
-            settings.addProperty("timeoutEnabled", timeoutEnabled);
-
-            if(timeoutEnabled) {
-                settings.addProperty("timeoutMinutes",
-                                     Integer.valueOf(timeoutTags.get(0)
-                                         .getElementsByTag("strategy").get(0)
-                                         .getElementsByTag("timeoutMinutes").get(0).html()));
-            }
-        }
-
-        boolean publishExists = JenkinsProvider.jobExists(jsc, publishJobName);
-        settings.addProperty("publishJobEnabled", publishExists);
-        if(publishExists) {
-            String publishJobXml = JenkinsProvider.getJobXml(jsc, publishJobName);
-
-            String publishBranchRegex = Jsoup.parse(publishJobXml, "", Parser.xmlParser())
-                                     .getElementsByTag("gerritProjects").get(0)
-                                     .getElementsByTag(GERRITPROJECT_TAG).get(0)
-                                     .getElementsByTag("branches").get(0)
-                                     .getElementsByTag(BRANCH_TAG).get(0)
-                                     .getElementsByTag("pattern").get(0).html();
-            publishBranchRegex = publishBranchRegex.substring(1, publishBranchRegex.length() - 1);
-            publishBranchRegex = publishBranchRegex.replace("(?!refs/)", "refs/heads/");
-            settings.addProperty("publishBranchRegex", publishBranchRegex);
-
-            String publishCommand =
-                Jsoup.parse(publishJobXml, "", Parser.xmlParser()).getElementsByTag("project")
-                    .get(0).getElementsByTag("builders").get(0)
-                    .getElementsByTag("hudson.tasks.Shell").get(0).getElementsByTag("command")
-                    .get(0).html();
-            settings.addProperty("publishCommand", publishCommand.replace(COMMAND_PREFIX, ""));
-
-            Elements timeoutTags =
-                Jsoup.parse(publishJobXml, "", Parser.xmlParser()).getElementsByTag(TIMEOUT_TAG);
-            boolean timeoutEnabled = timeoutTags.size() > 0;
-            settings.addProperty("timeoutEnabled", timeoutEnabled);
-
-            if(timeoutEnabled) {
-                settings.addProperty("timeoutMinutes",
-                                     Integer.valueOf(timeoutTags.get(0)
-                                         .getElementsByTag("strategy").get(0)
-                                         .getElementsByTag("timeoutMinutes").get(0).html()));
+        for(JobType type: JobType.values()) {
+            String jobName = type.getJobName(projectName);
+            boolean exists = JenkinsProvider.jobExists(jsc, jobName);
+            settings.addProperty(String.format("%sJobEnabled", type), exists);
+            if(exists) {
+                String jobXml = JenkinsProvider.getJobXml(jsc, jobName);
+                settings.addProperty(String.format("%sBranchRegex", type), getBranchRegex(jobXml));
+                settings.addProperty(String.format("%sCommand", type), getCommand(jobXml));
+                settings.addProperty("timeoutMinutes", getTimeoutMinutes(jobXml));
             }
         }
 
         return settings;
+    }
+
+    private static String getBranchRegex(String jobXml) {
+        String branchRegex = Jsoup.parse(jobXml, "", Parser.xmlParser())
+                .getElementsByTag("gerritProjects").get(0)
+                .getElementsByTag(GERRITPROJECT_TAG).get(0)
+                .getElementsByTag("branches").get(0)
+                .getElementsByTag(BRANCH_TAG).get(0)
+                .getElementsByTag("pattern").get(0).html();
+
+        // Remove "^" and "$" at the beginning and the end, respectively
+        branchRegex = branchRegex.substring(1, branchRegex.length() - 1);
+
+        // Remove sections of regex that we add post-user-input
+        branchRegex = branchRegex.replace("(?!refs/meta/)", "");
+        branchRegex = branchRegex.replace("(?!refs/)", "refs/heads/");
+
+        return branchRegex;
+    }
+
+    private static String getCommand(String jobXml) {
+        String command = Jsoup.parse(jobXml, "", Parser.xmlParser())
+                .getElementsByTag("project").get(0)
+                .getElementsByTag("builders").get(0)
+                .getElementsByTag("hudson.tasks.Shell").get(0)
+                .getElementsByTag("command").get(0).html();
+        return command.replace(COMMAND_PREFIX, "");
+    }
+
+    private static Integer getTimeoutMinutes(String jobXml) {
+        return Integer.valueOf(Jsoup.parse(jobXml, "", Parser.xmlParser())
+                .getElementsByTag(TIMEOUT_TAG).get(0)
+                .getElementsByTag("strategy").get(0)
+                .getElementsByTag("timeoutMinutes").get(0).html());
     }
 }

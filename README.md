@@ -81,18 +81,11 @@ publish jobs is `./scripts/publish.sh`. This is encouraging the idea that your b
 should not be entered directly into the text boxes. Instead, the build commands for your project
 should be placed into scripts that are version controlled with the rest of the project.
 
-##### Timeouts Enabled
-
-If this checkbox is checked, the [build-timeout plugin](https://wiki.jenkins-ci.org/display/JENKINS/Build-timeout+Plugin)
-will be enabled for all enabled jobs (if both the verify and publish jobs are enabled, the
-timeout will be enabled for both). This plugin allows you to automatically abort a build if it's
-taking too long. Once the timeout is reached, Jenkins behaves as if an invisible hand has clicked
-the "abort build" button.
-
 ##### Timeout Minutes
 
-This specifies the number of minutes to wait before automatically aborting the build. This will
-have no effect if the timeouts enabled checkbox is unchecked.
+This specifies the number of minutes to wait before automatically aborting the build. In order to
+abort the build, Jenkins uses the [build-timeout plugin](https://wiki.jenkins-ci.org/display/JENKINS/Build-timeout+Plugin).
+Once the timeout is reached, Jenkins behaves as if an invisible hand has clicked the "abort build" button.
 
 ## Development
 
