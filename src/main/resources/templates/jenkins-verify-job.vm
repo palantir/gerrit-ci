@@ -109,13 +109,7 @@
     <builders>
         <hudson.tasks.Shell>
             <command>
-#!/bin/bash
-set -x
-set -e
-date
-
-git reset --hard
-git clean -fdx
+${cleanCommands}
 ${verifyCommand}
             </command>
         </hudson.tasks.Shell>

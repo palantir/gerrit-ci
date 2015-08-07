@@ -107,14 +107,7 @@
     <builders>
         <hudson.tasks.Shell>
             <command>
-#!/bin/bash
-set -x
-set -e
-date
-
-git reset --hard
-git clean -fdx
-
+${cleanCommands}
 ${publishCommand}
             </command>
         </hudson.tasks.Shell>
