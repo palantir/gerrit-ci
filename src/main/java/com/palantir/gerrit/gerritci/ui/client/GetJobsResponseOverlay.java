@@ -37,4 +37,11 @@ public class GetJobsResponseOverlay extends JavaScriptObject {
     public final native Integer getTimeoutMinutes()/*-{
                                                    return this.timeoutMinutes;
                                                    }-*/;
+    public final native Boolean getJunitEnabled()/*-{
+                                                   return this.junitEnabled;
+                                                   }-*/;
+    public final native String getJunitPath()/*-{
+                                                  return this.junitPath;
+                                                  }-*/;
+
 }

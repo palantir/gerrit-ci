@@ -116,16 +116,13 @@ date
 
 git reset --hard
 git clean -fdx
-
 ${verifyCommand}
             </command>
         </hudson.tasks.Shell>
     </builders>
-
     <buildWrappers>
         <hudson.plugins.timestamper.TimestamperBuildWrapper
             plugin="timestamper@1.5.14" />
-
         <hudson.plugins.build__timeout.BuildTimeoutWrapper plugin="build-timeout@1.14.1">
             <strategy class="hudson.plugins.build_timeout.impl.AbsoluteTimeOutStrategy">
                 <timeoutMinutes>$timeoutMinutes</timeoutMinutes>
@@ -133,4 +130,58 @@ ${verifyCommand}
             <operationList/>
         </hudson.plugins.build__timeout.BuildTimeoutWrapper>
     </buildWrappers>
+#if($junitEnabled)
+  <publishers>
+      <hudson.plugins.postbuildtask.PostbuildTask plugin="postbuild-task@1.8">
+         <tasks>
+            <hudson.plugins.postbuildtask.TaskProperties>
+               <logTexts>
+                  <hudson.plugins.postbuildtask.LogProperties>
+                     <logText>BUILD SUCCESS0</logText>
+                     <operator>AND</operator>
+                  </hudson.plugins.postbuildtask.LogProperties>
+               </logTexts>
+               <EscalateStatus>false</EscalateStatus>
+               <RunIfJobSuccessful>true</RunIfJobSuccessful>
+               <script>$esc.xml($successCommand)</script>
+            </hudson.plugins.postbuildtask.TaskProperties>
+            <hudson.plugins.postbuildtask.TaskProperties>
+               <logTexts>
+                  <hudson.plugins.postbuildtask.LogProperties>
+                     <logText>BUILD FAILURE1</logText>
+                     <operator>AND</operator>
+                  </hudson.plugins.postbuildtask.LogProperties>
+               </logTexts>
+               <EscalateStatus>false</EscalateStatus>
+               <RunIfJobSuccessful>false</RunIfJobSuccessful>
+               <script>$esc.xml($failedCommand)</script>
+            </hudson.plugins.postbuildtask.TaskProperties>
+         </tasks>
+      </hudson.plugins.postbuildtask.PostbuildTask>
+      <xunit>
+         <types>
+            <JUnitType>
+               <pattern>$junitPath</pattern>
+               <faildedIfNotNew>true</faildedIfNotNew>
+               <deleteOutputFiles>true</deleteOutputFiles>
+               <stopProcessingIfError>true</stopProcessingIfError>
+            </JUnitType>
+         </types>
+         <thresholds>
+            <org.jenkinsci.plugins.xunit.threshold.FailedThreshold>
+               <unstableThreshold />
+               <unstableNewThreshold />
+               <failureThreshold />
+               <failureNewThreshold />
+            </org.jenkinsci.plugins.xunit.threshold.FailedThreshold>
+            <org.jenkinsci.plugins.xunit.threshold.SkippedThreshold>
+               <unstableThreshold />
+               <unstableNewThreshold />
+               <failureThreshold />
+               <failureNewThreshold />
+            </org.jenkinsci.plugins.xunit.threshold.SkippedThreshold>
+         </thresholds>
+      </xunit>
+   </publishers>
+#end
 </project>
