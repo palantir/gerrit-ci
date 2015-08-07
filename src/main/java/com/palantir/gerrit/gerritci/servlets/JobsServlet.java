@@ -9,10 +9,18 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.jar.JarFile;
+
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+
+import org.eclipse.jgit.errors.ConfigInvalidException;
+import org.eclipse.jgit.storage.file.FileBasedConfig;
+import org.eclipse.jgit.util.FS;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.google.common.io.CharStreams;
 import com.google.gerrit.common.data.GerritConfig;
 import com.google.gerrit.reviewdb.client.Project.NameKey;
@@ -26,7 +34,6 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
-import com.palantir.gerrit.gerritci.constants.Constants;
 import com.palantir.gerrit.gerritci.constants.JobType;
 import com.palantir.gerrit.gerritci.models.JenkinsServerConfiguration;
 import com.palantir.gerrit.gerritci.providers.JenkinsProvider;
@@ -41,6 +48,7 @@ public class JobsServlet extends HttpServlet {
     private GerritConfig gerritConfig;
     private String canonicalWebUrl;
     private SitePaths sitePaths;
+    private static final Logger logger = LoggerFactory.getLogger(JobsServlet.class);
 
     @Inject
     public JobsServlet(final ProjectControl.Factory projectControlFactory,
@@ -87,14 +95,26 @@ public class JobsServlet extends HttpServlet {
             res.setStatus(responseCode);
             return;
         }
-
-        // TODO: Replace this with the request body
-        JenkinsServerConfiguration jsc = new JenkinsServerConfiguration();
+        FileBasedConfig cfg =
+                new FileBasedConfig(new File(sitePaths.etc_dir, "gerrit-ci.config"), FS.DETECTED);
         try {
-            jsc.setUri(new URI(Constants.JENKINS_URL));
-        } catch(URISyntaxException e) {}
-        jsc.setUsername(Constants.JENKINS_USER);
-        jsc.setPassword(Constants.JENKINS_PASSWORD);
+            cfg.load();
+        } catch(ConfigInvalidException e) {
+            logger.info("Error loading config file after get request:", e);
+        }
+
+        String jenkinsUrlString = cfg.getString("Settings", "Jenkins", "jenkinsURL");
+        String jenkinsUserString = cfg.getString("Settings", "Jenkins", "jenkinsUser");
+        String jenkinsPasswordString = cfg.getString("Settings", "Jenkins", "jenkinsPassword");
+
+        JenkinsServerConfiguration jsc = new JenkinsServerConfiguration();
+
+        try {
+            jsc.setUri(new URI(jenkinsUrlString));
+        } catch(URISyntaxException e) {
+        }
+        jsc.setUsername(jenkinsUserString);
+        jsc.setPassword(jenkinsPasswordString);
 
         JsonObject params = JenkinsJobParser.parseJenkinsJob(projectName, jsc);
 
@@ -211,9 +231,21 @@ public class JobsServlet extends HttpServlet {
             res.setStatus(400);
             return;
         }
-        params.put("timeoutMinutes", requestParams.get("timeoutMinutes").getAsJsonObject().get("b")
-            .getAsInt());
+        params.put("timeoutMinutes",
+                requestParams.get("timeoutMinutes").getAsJsonObject().get("b").getAsInt());
 
+
+        FileBasedConfig cfg =
+                new FileBasedConfig(new File(sitePaths.etc_dir, "gerrit-ci.config"), FS.DETECTED);
+        try {
+            cfg.load();
+        } catch(ConfigInvalidException e) {
+            logger.info("Error loading config file after get request:", e);
+        }
+
+        String jenkinsUrlString = cfg.getString("Settings", "Jenkins", "jenkinsURL");
+        String jenkinsUserString = cfg.getString("Settings", "Jenkins", "jenkinsUser");
+        String jenkinsPasswordString = cfg.getString("Settings", "Jenkins", "jenkinsPassword");
 
         // Add junit post build action
         if(!requestParams.has("junitEnabled")) {
@@ -234,10 +266,11 @@ public class JobsServlet extends HttpServlet {
         // TODO: Replace this with the request body
         JenkinsServerConfiguration jsc = new JenkinsServerConfiguration();
         try {
-            jsc.setUri(new URI(Constants.JENKINS_URL));
-        } catch(URISyntaxException e) {}
-        jsc.setUsername(Constants.JENKINS_USER);
-        jsc.setPassword(Constants.JENKINS_PASSWORD);
+            jsc.setUri(new URI(jenkinsUrlString));
+        } catch(URISyntaxException e) {
+        }
+        jsc.setUsername(jenkinsUserString);
+        jsc.setPassword(jenkinsPasswordString);
 
         String sshPort = gerritConfig.getSshdAddress();
         sshPort = sshPort.substring(sshPort.lastIndexOf(':') + 1);
@@ -250,10 +283,10 @@ public class JobsServlet extends HttpServlet {
             host = host.substring(0, host.length() - 1);
         }
 
-        params.put("gerritUser", Constants.GERRIT_USER);
+        params.put("gerritUser", cfg.getString("Settings", "Jenkins", "gerritUser"));
         params.put("host", host);
         params.put("port", sshPort);
-        params.put("credentialsId", Constants.CREDENTIALS_ID);
+        params.put("credentialsId", cfg.getString("Settings", "Jenkins", "credentialsId"));
 
         String verifyJobName = JobType.VERIFY.getJobName(projectName);
         String publishJobName = JobType.PUBLISH.getJobName(projectName);

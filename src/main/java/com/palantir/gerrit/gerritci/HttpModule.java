@@ -4,6 +4,7 @@ import com.google.gerrit.extensions.registration.DynamicSet;
 import com.google.gerrit.extensions.webui.GwtPlugin;
 import com.google.gerrit.extensions.webui.WebUiPlugin;
 import com.google.gerrit.httpd.plugins.HttpPluginModule;
+import com.palantir.gerrit.gerritci.servlets.ConfigServlet;
 import com.palantir.gerrit.gerritci.servlets.JobsServlet;
 
 /**
@@ -21,5 +22,6 @@ public class HttpModule extends HttpPluginModule {
          * This regex is intended to match /jobs/${projectName}.
          */
         serveRegex("/jobs/[^\\/]+$").with(JobsServlet.class);
+        serve("/settings").with(ConfigServlet.class);
     }
 }

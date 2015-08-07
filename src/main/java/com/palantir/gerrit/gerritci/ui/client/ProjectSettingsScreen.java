@@ -90,6 +90,8 @@ public class ProjectSettingsScreen extends PluginEntryPoint {
     @Override
     public void onPluginLoad() {
 
+        //Screen to configure settings to the gerrit-ci Plugin
+        Plugin.get().screen("settings", new ConfigurationScreen.Factory());
         /*
          * The regex will match all strings following "projects/". This is necessary because project
          * names can contain slashes.
