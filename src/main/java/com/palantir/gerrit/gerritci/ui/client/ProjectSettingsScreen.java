@@ -317,19 +317,19 @@ public class ProjectSettingsScreen extends PluginEntryPoint {
                     @Override
                     public void onClick(ClickEvent event) {
                         Map<String, Object> params = new HashMap<String, Object>();
-                        params.put("projectName", projectName);
+                        params.put("projectName", makeXMLFriendly(projectName));
 
                         params.put("verifyJobEnabled", verifyJobEnabled.getValue());
-                        params.put("verifyBranchRegex", verifyBranchRegex.getText());
-                        params.put("verifyCommand", verifyCommand.getText());
+                        params.put("verifyBranchRegex", makeXMLFriendly(verifyBranchRegex.getText()));
+                        params.put("verifyCommand", makeXMLFriendly(verifyCommand.getText()));
 
                         params.put("publishJobEnabled", publishJobEnabled.getValue());
-                        params.put("publishBranchRegex", publishBranchRegex.getText());
-                        params.put("publishCommand", publishCommand.getText());
+                        params.put("publishBranchRegex", makeXMLFriendly(publishBranchRegex.getText()));
+                        params.put("publishCommand", makeXMLFriendly(publishCommand.getText()));
 
                         params.put("timeoutMinutes", Integer.valueOf(timeoutMinutes.getText()));
                         params.put("junitEnabled", junitEnabled.getValue());
-                        params.put("junitPath", junitPath.getText());
+                        params.put("junitPath", makeXMLFriendly(junitPath.getText()));
 
                         new RestApi("plugins").id("gerrit-ci").view("jobs")
                             .view(encodedProjectName)
@@ -373,15 +373,15 @@ public class ProjectSettingsScreen extends PluginEntryPoint {
                             publishJobEnabled.setValue(config.getPublishJobEnabled());
                             junitEnabled.setValue(config.getJunitEnabled());
 
-                            String verifyBranchRegexString = config.getVerifyBranchRegex();
-                            String verifyCommandString = config.getVerifyCommand();
+                            String verifyBranchRegexString = makeXMLReadeable(config.getVerifyBranchRegex().toString());
+                            String verifyCommandString = makeXMLReadeable(config.getVerifyCommand().toString());
 
-                            String publishBranchRegexString = config.getPublishBranchRegex();
-                            String publishCommandString = config.getPublishCommand();
+                            String publishBranchRegexString =  makeXMLReadeable(config.getPublishBranchRegex().toString());
+                            String publishCommandString =  makeXMLReadeable(config.getPublishCommand().toString());
 
                             Integer timeoutMinutesInteger = config.getTimeoutMinutes();
 
-                            String junitPathString = config.getJunitPath();
+                            String junitPathString = makeXMLReadeable(config.getJunitPath().toString());
 
                             if(verifyBranchRegexString != null) {
                                 verifyBranchRegex.setText(verifyBranchRegexString);
@@ -468,5 +468,19 @@ public class ProjectSettingsScreen extends PluginEntryPoint {
 
         dialogBox.add(verticalPanel);
         return dialogBox;
+    }
+
+    public static String makeXMLFriendly(String s){
+        if(s==null){
+            return null;
+        }
+        return s.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
+
+    }
+    public static String makeXMLReadeable(String s){
+        if (s==null)
+            return null;
+        return s.replaceAll("&amp;", "&").replaceAll("&lt;", "<").replaceAll("&gt;", ">");
+
     }
 }
