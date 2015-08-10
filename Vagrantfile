@@ -176,6 +176,7 @@ Vagrant.configure(2) do |config|
     # Configure gerrit-trigger plugin and ssh credentials
     cp /vagrant/resources/gerrit-trigger.xml ~/.jenkins
     cp /vagrant/resources/credentials.xml ~/.jenkins
+    cp /vagrant/resources/jenkins.model.JenkinsLocationConfiguration.xml ~/.jenkins
 
     java -jar jenkins-cli.jar -s http://localhost:8000 restart
 
