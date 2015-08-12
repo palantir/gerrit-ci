@@ -7,6 +7,24 @@ will enable project owners to create customized Jenkins jobs with a few simple c
 inspired by [Stashbot](https://github.com/palantir/stashbot) and has similar goals, although there
 are differences in the way it operates.
 
+## Admin Guide
+
+In order for Gerrit-ci to create, update, and launch jobs on the Jenkins server, Jenkins and Gerrit must be configured to communicate. This setup is done on the gerrit-ci plugin settings's page as follows:
+	
+0. On the Gerrit's Installed Plugin page, click on the gerrit-ci settings gear.
+0. Fill in the fields as required, and click "Save and update."  
+
+A brief explanation of the fields is given below:
+
+0. Jenkins Url : The URL of the Jenkins server Gerrit should create jobs on.
+0. Gerrit User : The Gerrit user that Jenkins will use to clone projects and create comments on changes in Gerrit.
+0. Jenkins User : The Jenkins user that Gerrit will use to create, update, and delete jobs.
+0. Jenkins Password : The AD password for the Jenkins user above. The user's API token can also be used.
+0. Credentials Id : In order to get this value, you must first create a SSH Credential on the Jenkins server. This is 
+0. documented here: https://wiki.jenkins-ci.org/display/JENKINS/Credentials+Plugin. Once you have created this, 
+0. configure a job to use the credential and then retreive for the <credentialsId> tag in the job's XML configuration.
+
+
 ## User Guide
 
 ### Job Types
@@ -86,6 +104,13 @@ should be placed into scripts that are version controlled with the rest of the p
 This specifies the number of minutes to wait before automatically aborting the build. In order to
 abort the build, Jenkins uses the [build-timeout plugin](https://wiki.jenkins-ci.org/display/JENKINS/Build-timeout+Plugin).
 Once the timeout is reached, Jenkins behaves as if an invisible hand has clicked the "abort build" button.
+
+##### Junit Enabled
+
+This checkbox flags Jenkins to publish test reports produced by various supported testing tools
+in Junit test report format. The location of generated raw XML or other report files
+(such as '**/build/cppunit-reports/*.xml') is specified in "Junit test results location". Test results
+can thus be recorded and monitored by Jenkins.
 
 ## Development
 
