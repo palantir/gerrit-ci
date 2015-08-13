@@ -30,9 +30,21 @@ public class GetJobsResponseOverlay extends JavaScriptObject {
                                                       return this.publishBranchRegex;
                                                       }-*/;
 
+    public final native boolean getCronJobEnabled()/*-{
+                                                      return this.cronJobEnabled;
+                                                      }-*/;
+
     public final native String getPublishCommand()/*-{
                                                   return this.publishCommand;
                                                   }-*/;
+
+    public final native String getCronCommand()/*-{
+                                           return this.cronCommand;
+                                           }-*/;
+
+    public final native String getCronJob()/*-{
+                                           return this.cronJob;
+                                           }-*/;
 
     public final native Integer getTimeoutMinutes()/*-{
                                                    return this.timeoutMinutes;

@@ -7,6 +7,7 @@ import com.google.gerrit.plugin.client.Plugin;
 import com.google.gerrit.plugin.client.PluginEntryPoint;
 import com.google.gerrit.plugin.client.rpc.RestApi;
 import com.google.gerrit.plugin.client.screen.Screen;
+import com.google.gwt.core.client.GWT;
 import com.google.gwt.core.client.JavaScriptObject;
 import com.google.gwt.dom.client.Document;
 import com.google.gwt.dom.client.HeadingElement;
@@ -21,9 +22,13 @@ import com.google.gwt.user.client.ui.Button;
 import com.google.gwt.user.client.ui.CheckBox;
 import com.google.gwt.user.client.ui.DialogBox;
 import com.google.gwt.user.client.ui.HTML;
+import com.google.gwt.user.client.ui.HTMLPanel;
 import com.google.gwt.user.client.ui.HasAlignment;
+import com.google.gwt.user.client.ui.HorizontalPanel;
+import com.google.gwt.user.client.ui.Image;
 import com.google.gwt.user.client.ui.Label;
 import com.google.gwt.user.client.ui.TextBox;
+import com.google.gwt.user.client.ui.ToggleButton;
 import com.google.gwt.user.client.ui.VerticalPanel;
 
 /**
@@ -63,6 +68,26 @@ public class ProjectSettingsScreen extends PluginEntryPoint {
     private TextBox publishBranchRegex;
 
     /**
+     * TextBox that contains the name of the command to run for cron jobs
+     */
+    private TextBox cronCommand;
+
+    /**
+     * CheckBox that will enable or disable cron jobs
+     */
+    private CheckBox cronJobEnabled;
+
+    /**
+     * TextBox that contains the schedule to run builds
+     */
+    private TextBox cronJob;
+
+    /**
+     * Toggle button for cron syntax
+     */
+    private ToggleButton toggle;
+
+    /**
      * TextBox that contains the name of the command to run for publish jobs
      */
     private TextBox publishCommand;
@@ -86,6 +111,8 @@ public class ProjectSettingsScreen extends PluginEntryPoint {
      * Button that saves the project configuration and creates the jobs
      */
     private Button saveButton;
+
+    public static final Resources RESOURCES = GWT.create(Resources.class);
 
     @Override
     public void onPluginLoad() {
@@ -114,6 +141,12 @@ public class ProjectSettingsScreen extends PluginEntryPoint {
                 publishJobEnabled = new CheckBox("Enable Publish Jobs");
                 publishBranchRegex = new TextBox();
                 publishCommand = new TextBox();
+                cronJobEnabled = new CheckBox("Enable Time-Triggered Jobs");
+                cronCommand = new TextBox();
+                cronJob = new TextBox();
+                toggle = new ToggleButton(new Image(RESOURCES.info()));
+                toggle.setEnabled(true);
+                toggle.setPixelSize(20, 20);
                 junitEnabled = new CheckBox("Publish JUnit test result report");
                 junitPath = new TextBox();
                 timeoutMinutes = new TextBox();
@@ -245,6 +278,74 @@ public class ProjectSettingsScreen extends PluginEntryPoint {
                     .setInnerText("Simple command or a shell script to run for publish jobs");
                 verticalPanel.add(HTML.wrap(publishCommandDescription));
 
+                // cronJobHeader
+                HeadingElement cronHeader = Document.get().createHElement(2);
+                cronHeader.setInnerText("Time-Triggered Job (Cron Job)");
+                verticalPanel.add(HTML.wrap(cronHeader));
+
+                // cronJobEnabled
+                cronJobEnabled.setValue(false);
+                cronJobEnabled.setEnabled(false);
+                cronJobEnabled.addClickHandler(new ClickHandler() {
+
+                    @Override
+                    public void onClick(ClickEvent event) {
+                        updateWidgetEnablity();
+                    }
+                });
+                verticalPanel.add(cronJobEnabled);
+                ParagraphElement cronJobEnabledDescription = Document.get().createPElement();
+                cronJobEnabledDescription.setClassName("description");
+                cronJobEnabledDescription
+                    .setInnerText("Check this checkbox to enable time-triggered jobs for your project");
+                verticalPanel.add(HTML.wrap(cronJobEnabledDescription));
+
+                // cronCommand
+                ParagraphElement cronCommandLabel = Document.get().createPElement();
+                cronCommandLabel.setInnerText("Command to run for time-triggered job");
+                cronCommandLabel.setClassName("label");
+                verticalPanel.add(HTML.wrap(cronCommandLabel));
+                cronCommand.setText("./scripts/cron.sh");
+                cronCommand.addKeyPressHandler(new KeyPressHandler() {
+                    @Override
+                    public void onKeyPress(KeyPressEvent event) {
+                        event.stopPropagation();
+                    }
+                });
+                verticalPanel.add(cronCommand);
+                ParagraphElement cronCommandDescription = Document.get().createPElement();
+                cronCommandDescription.setClassName("description");
+                cronCommandDescription
+                    .setInnerText("Simple command or a shell script to run for time-triggered jobs");
+                verticalPanel.add(HTML.wrap(cronCommandDescription));
+
+                final HorizontalPanel hp = new HorizontalPanel();
+                hp.setSpacing(10);
+                ParagraphElement cronJobLabel = Document.get().createPElement();
+                cronJobLabel.setInnerText("Build Schedule");
+                cronJobLabel.setClassName("label");
+                verticalPanel.add(HTML.wrap(cronJobLabel));
+                cronJob.setText("");
+                cronJob.addKeyPressHandler(new KeyPressHandler() {
+                    @Override
+                    public void onKeyPress(KeyPressEvent event) {
+                        event.stopPropagation();
+                    }
+                });
+                hp.add(cronJob);
+                final HTMLPanel cronJobDescription = new HTMLPanel(RESOURCES.cron().getText());
+                toggle.addClickHandler(new ClickHandler() {
+                    public void onClick(ClickEvent event) {
+                   if (toggle.isDown()) {
+                        hp.add(cronJobDescription);
+                   }
+                   else{
+                       hp.remove(cronJobDescription);
+                   }
+                    }
+                  });
+                hp.add(toggle);
+                verticalPanel.add(hp);
                 // generalHeader
                 HeadingElement generalHeader = Document.get().createHElement(2);
                 generalHeader.setInnerText("General Settings");
@@ -316,6 +417,11 @@ public class ProjectSettingsScreen extends PluginEntryPoint {
 
                     @Override
                     public void onClick(ClickEvent event) {
+                        String cronCheckString = cronCheck(cronJob.getText());
+                        if(!cronCheckString.equals("success")){
+                            alertWidget("ERROR: Time-Triggered Input Invalid", cronCheckString).center();
+                            return;
+                        }
                         Map<String, Object> params = new HashMap<String, Object>();
                         params.put("projectName", makeXMLFriendly(projectName));
 
@@ -326,6 +432,10 @@ public class ProjectSettingsScreen extends PluginEntryPoint {
                         params.put("publishJobEnabled", publishJobEnabled.getValue());
                         params.put("publishBranchRegex", makeXMLFriendly(publishBranchRegex.getText()));
                         params.put("publishCommand", makeXMLFriendly(publishCommand.getText()));
+
+                        params.put("cronJobEnabled", cronJobEnabled.getValue());
+                        params.put("cronCommand", makeXMLFriendly(cronCommand.getText()));
+                        params.put("cronJob", makeXMLFriendly(cronJob.getText()));
 
                         params.put("timeoutMinutes", Integer.valueOf(timeoutMinutes.getText()));
                         params.put("junitEnabled", junitEnabled.getValue());
@@ -344,7 +454,7 @@ public class ProjectSettingsScreen extends PluginEntryPoint {
                                 public void onSuccess(JavaScriptObject result) {
                                     GetJobsResponseOverlay config = (GetJobsResponseOverlay) result;
                                     if(config.getErrorMsg() != null){
-                                        alertWidget("Error: Action Not Completed",
+                                        alertWidget("ERROR: Action Not Completed",
                                                 config.getErrorMsg().toString())
                                         .center();
                                        return;
@@ -376,13 +486,14 @@ public class ProjectSettingsScreen extends PluginEntryPoint {
                         public void onSuccess(JavaScriptObject result) {
                             GetJobsResponseOverlay config = (GetJobsResponseOverlay) result;
                             if(config.getErrorMsg() != null){
-                                alertWidget("Error: Action Not Completed",
+                                alertWidget("ERROR: Action Not Completed",
                                         config.getErrorMsg().toString())
                                 .center();
                                return;
                             }
                             verifyJobEnabled.setValue(config.getVerifyJobEnabled());
                             publishJobEnabled.setValue(config.getPublishJobEnabled());
+                            cronJobEnabled.setValue(config.getCronJobEnabled());
                             junitEnabled.setValue(config.getJunitEnabled());
 
                             String verifyBranchRegexString = makeXMLReadeable(config.getVerifyBranchRegex().toString());
@@ -390,6 +501,9 @@ public class ProjectSettingsScreen extends PluginEntryPoint {
 
                             String publishBranchRegexString =  makeXMLReadeable(config.getPublishBranchRegex().toString());
                             String publishCommandString =  makeXMLReadeable(config.getPublishCommand().toString());
+
+                            String cronCommandString = makeXMLReadeable(config.getCronCommand().toString());
+                            String cronJobString = makeXMLReadeable(config.getCronJob().toString());
 
                             Integer timeoutMinutesInteger = config.getTimeoutMinutes();
 
@@ -411,6 +525,14 @@ public class ProjectSettingsScreen extends PluginEntryPoint {
                                 publishCommand.setText(publishCommandString);
                             }
 
+                            if(cronCommandString != null) {
+                                cronCommand.setText(cronCommandString);
+                            }
+
+                            if(cronJobString != null) {
+                                cronJob.setText(cronJobString);
+                            }
+
                             if(timeoutMinutesInteger != null) {
                                 timeoutMinutes.setText(String.valueOf(timeoutMinutesInteger));
                             }
@@ -422,6 +544,7 @@ public class ProjectSettingsScreen extends PluginEntryPoint {
 
                             verifyJobEnabled.setEnabled(true);
                             publishJobEnabled.setEnabled(true);
+                            cronJobEnabled.setEnabled(true);
                             junitEnabled.setEnabled(true);
                             saveButton.setEnabled(true);
                             updateWidgetEnablity();
@@ -442,8 +565,43 @@ public class ProjectSettingsScreen extends PluginEntryPoint {
 
         publishBranchRegex.setEnabled(publishJobEnabled.getValue());
         publishCommand.setEnabled(publishJobEnabled.getValue());
+
+        cronJob.setEnabled(cronJobEnabled.getValue());
+        cronCommand.setEnabled(cronJobEnabled.getValue());
+
         timeoutMinutes.setEnabled(verifyJobEnabled.getValue() || publishJobEnabled.getValue());
         junitPath.setEnabled(junitEnabled.getValue());
+    }
+    
+    /**
+     * Validate accuracy of cron schedule passed in.
+     * Returns "success" or explanation of invalid string.
+     */
+    private String cronCheck(String cronString) {
+        if (cronString == null || cronString.length() < 1) {
+            return "success";
+        }
+        String[] sched = cronString.split("\\s+");
+        if (sched.length != 5) {
+            return "Invalid number of time parameters (should be 5 but found " + sched.length + "). " +
+                    "Please note that the best way to check that the new syntax is correct " +
+                    "is to reload this page and ensure that the " +
+                    "new time schedule has been " +
+                    "saved and updated successfully.";
+        }
+        try {
+            Integer.parseInt(sched[0]);
+            Integer.parseInt(sched[1]);
+        } catch (NumberFormatException e) {
+            return "As to not overload the system, " +
+                    "only integers are permitted for " +
+                    "first two time parameters (minute and hour). " +
+                    "NOTE: Please note that the best way to check that new the syntax is correct " +
+                    "is to reload this page and ensure that the " +
+                    "new time schedule has been " +
+                    "saved and updated successfully.";
+        }
+        return "success";
     }
 
     /**
@@ -479,6 +637,7 @@ public class ProjectSettingsScreen extends PluginEntryPoint {
         verticalPanel.setCellHorizontalAlignment(buttonClose, HasAlignment.ALIGN_CENTER);
 
         dialogBox.add(verticalPanel);
+        dialogBox.setWidth("400px");
         return dialogBox;
     }
 
