@@ -57,6 +57,7 @@ public class JenkinsJobParser {
                 settings.addProperty(String.format("%sBranchRegex", type), getBranchRegex(jobXml));
                 settings.addProperty(String.format("%sCommand", type), getCommand(jobXml));
                 settings.addProperty("timeoutMinutes", getTimeoutMinutes(jobXml));
+                settings.addProperty("cronJob", getCronJob(jobXml));
                 String junitPath = getJunitPath(jobXml);
                 if (junitPath == "") {
                     settings.addProperty("junitEnabled", false);
@@ -125,6 +126,17 @@ public class JenkinsJobParser {
                     .getElementsByTag("JUnitType").get(0)
                     .getElementsByTag("pattern").get(0).html();
             return junitPath;
+        } catch (IndexOutOfBoundsException e) {
+            return null;
+        }
+    }
+
+    private static String getCronJob(String jobXml) {
+        try {
+            return Jsoup.parse(jobXml, "", Parser.xmlParser())
+                    .getElementsByTag("triggers").get(0)
+                    .getElementsByTag("hudson.triggers.SCMTrigger").get(0)
+                    .getElementsByTag("spec").get(0).html();
         } catch (IndexOutOfBoundsException e) {
             return null;
         }
