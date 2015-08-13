@@ -20,8 +20,7 @@ A brief explanation of the fields is given below:
 0. Gerrit User : The Gerrit user that Jenkins will use to clone projects and create comments on changes in Gerrit.
 0. Jenkins User : The Jenkins user that Gerrit will use to create, update, and delete jobs.
 0. Jenkins Password : The AD password for the Jenkins user above. The user's API token can also be used.
-0. Credentials Id : In order to get this value, you must first create a SSH Credential on the Jenkins server. This is 
-0. documented here: https://wiki.jenkins-ci.org/display/JENKINS/Credentials+Plugin. Once you have created this, 
+0. Credentials Id : In order to get this value, you must first create a SSH Credential on the Jenkins server. This is  documented here: https://wiki.jenkins-ci.org/display/JENKINS/Credentials+Plugin. Once you have created this, 
 0. configure a job to use the credential and then retreive for the <credentialsId> tag in the job's XML configuration.
 
 
@@ -69,7 +68,8 @@ To get to the configuration screen for your project, follow these steps:
 
 0. Click `Projects` in the Gerrit top menu
 0. Click `List` and find your project
-0. Now that your project is selected, click `Gerrit-CI` in the submenu at the top of the screen.
+0. Now that your project is selected, click `Gerrit-CI` in the submenu at the top of the screen. 
+  
 This will bring you to the Gerrit-CI settings page for your project.
 
 ##### Job Enabled
