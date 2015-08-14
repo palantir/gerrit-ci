@@ -7,6 +7,24 @@ will enable project owners to create customized Jenkins jobs with a few simple c
 inspired by [Stashbot](https://github.com/palantir/stashbot) and has similar goals, although there
 are differences in the way it operates.
 
+## Installation
+
+Getting the plugin up and running is fairly straightforward:
+
+```shell
+$ git clone https://github.com/palantir/gerrit-ci.git
+$ ./gradlew build
+```
+
+That will build the jar - which you can find in `./build/libs/gerrit-ci.jar`
+
+Assuming the gerrit is running on localhost, this command will install the plugin (switch out the proper hostname for localhost for remote installs):
+
+```shell
+$ ssh -p 29418 localhost gerrit plugin install -n gerrit-ci.jar - ./build/libs/gerrit-ci.jar
+```
+
+
 ## Admin Guide
 
 In order for Gerrit-ci to create, update, and launch jobs on the Jenkins server, Jenkins and Gerrit must be configured to communicate. This setup is done on the gerrit-ci plugin settings's page as follows:
@@ -114,6 +132,8 @@ can thus be recorded and monitored by Jenkins.
 
 ## Development
 
+For those interested in contributing/extending gerrit-ci, we've tried to make it as possible.  Using Vagrant, you can spin up a VM running both Gerrit and Jenkins.  The build system knows how to push updated plugins directly into the VM to make the testing cycle faster.
+
 ### Requirements
 
 #### Vagrant
@@ -191,3 +211,19 @@ $ java -jar ~/gerrit.war reindex
 ### Jenkins
 
 The new local Jenkins server can be accessed at `http://localhost:8000`.
+
+## License
+
+Copyright 2015, Palantir Technologies.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
