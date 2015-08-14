@@ -58,53 +58,62 @@ public class JenkinsJobParser {
     }
 
     private static String getBranchRegex(String jobXml) {
-        String branchRegex = Jsoup.parse(jobXml, "", Parser.xmlParser())
-                .getElementsByTag("gerritProjects").get(0)
-                .getElementsByTag(GERRITPROJECT_TAG).get(0)
-                .getElementsByTag("branches").get(0)
-                .getElementsByTag(BRANCH_TAG).get(0)
-                .getElementsByTag("pattern").get(0).html();
+        try {
+            String branchRegex = Jsoup.parse(jobXml, "", Parser.xmlParser())
+                    .getElementsByTag("gerritProjects").get(0)
+                    .getElementsByTag(GERRITPROJECT_TAG).get(0)
+                    .getElementsByTag("branches").get(0)
+                    .getElementsByTag(BRANCH_TAG).get(0)
+                    .getElementsByTag("pattern").get(0).html();
 
-        // Remove "^" and "$" at the beginning and the end, respectively
-        branchRegex = branchRegex.substring(1, branchRegex.length() - 1);
+            // Remove "^" and "$" at the beginning and the end, respectively
+            branchRegex = branchRegex.substring(1, branchRegex.length() - 1);
 
-        // Remove sections of regex that we add post-user-input
-        branchRegex = branchRegex.replace("(?!refs/meta/)", "");
-        branchRegex = branchRegex.replace("(?!refs/)", "refs/heads/");
+            // Remove sections of regex that we add post-user-input
+            branchRegex = branchRegex.replace("(?!refs/meta/)", "");
+            branchRegex = branchRegex.replace("(?!refs/)", "refs/heads/");
 
-        return branchRegex;
+            return branchRegex;
+        } catch (IndexOutOfBoundsException e) {
+            return null;
+        }
     }
 
     private static String getCommand(String jobXml) {
-        String command = Jsoup.parse(jobXml, "", Parser.xmlParser())
-                .getElementsByTag("project").get(0)
-                .getElementsByTag("builders").get(0)
-                .getElementsByTag("hudson.tasks.Shell").get(0)
-                .getElementsByTag("command").get(0).html();
-        return command.replaceAll("(?s)^.*### END PREBUILD-COMMANDS ###\\s+", "");
+        try {
+            String command = Jsoup.parse(jobXml, "", Parser.xmlParser())
+                    .getElementsByTag("project").get(0)
+                    .getElementsByTag("builders").get(0)
+                    .getElementsByTag("hudson.tasks.Shell").get(0)
+                    .getElementsByTag("command").get(0).html();
+            return command.replaceAll("(?s)^.*### END PREBUILD-COMMANDS ###\\s+", "");
+        } catch (IndexOutOfBoundsException e) {
+            return null;
+        }
     }
 
     private static Integer getTimeoutMinutes(String jobXml) {
+        try{
         return Integer.valueOf(Jsoup.parse(jobXml, "", Parser.xmlParser())
                 .getElementsByTag(TIMEOUT_TAG).get(0)
                 .getElementsByTag("strategy").get(0)
                 .getElementsByTag("timeoutMinutes").get(0).html());
+        }catch(IndexOutOfBoundsException e){
+            return null;
+        }
     }
 
     private static String getJunitPath(String jobXml){
-        boolean junitEnabled = Jsoup.parse(jobXml, "", Parser.xmlParser())
-                .getElementsByTag("publishers").size()>0 && Jsoup.parse(jobXml, "", Parser.xmlParser())
-                .getElementsByTag("publishers").get(0)
-                .getElementsByTag("xunit").size()>0;
-                if(junitEnabled){
-                    String junitPath = Jsoup.parse(jobXml, "", Parser.xmlParser())
-                            .getElementsByTag("publishers").get(0)
-                            .getElementsByTag("xunit").get(0)
-                            .getElementsByTag("types").get(0)
-                            .getElementsByTag("JUnitType").get(0)
-                            .getElementsByTag("pattern").get(0).html();
-                    return junitPath;
-                }
-                return "";
+        try {
+            String junitPath = Jsoup.parse(jobXml, "", Parser.xmlParser())
+                    .getElementsByTag("publishers").get(0)
+                    .getElementsByTag("xunit").get(0)
+                    .getElementsByTag("types").get(0)
+                    .getElementsByTag("JUnitType").get(0)
+                    .getElementsByTag("pattern").get(0).html();
+            return junitPath;
+        } catch (IndexOutOfBoundsException e) {
+            return null;
+        }
     }
 }
