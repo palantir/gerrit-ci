@@ -90,17 +90,25 @@ public class JobsServlet extends HttpServlet {
             req.getRequestURI().substring(req.getRequestURI().lastIndexOf('/') + 1);
         String projectName = encodedProjectName.replace("%2F", "/");
 
-        int responseCode = getResponseCode(projectName);
-        if(responseCode != 200) {
-            res.setStatus(responseCode);
+        //Always send 200 status and handle errors in ProjectScreenSettings
+        res.setStatus(200);
+        res.setContentType("application/json");
+        res.setCharacterEncoding("UTF-8");
+
+        //When an error occurs, this returns an error message to ProjectScreenSettings to warn the user.
+        if(!safetyCheck(getResponseCode(projectName), res, projectName))
             return;
-        }
+
         FileBasedConfig cfg =
                 new FileBasedConfig(new File(sitePaths.etc_dir, "gerrit-ci.config"), FS.DETECTED);
         try {
             cfg.load();
         } catch(ConfigInvalidException e) {
-            logger.info("Error loading config file after get request:", e);
+            logger.error("Error loading config file after get request:", e);
+            JsonObject errorMsg = new JsonObject();
+            errorMsg.addProperty("error", "Please configure gerrit-ci in the Plugins Settings page (requires admin access).");
+            res.getWriter().write(errorMsg.toString());
+            return;
         }
 
         String jenkinsUrlString = cfg.getString("Settings", "Jenkins", "jenkinsURL");
@@ -115,13 +123,22 @@ public class JobsServlet extends HttpServlet {
         }
         jsc.setUsername(jenkinsUserString);
         jsc.setPassword(jenkinsPasswordString);
-
-        JsonObject params = JenkinsJobParser.parseJenkinsJob(projectName, jsc);
-
-        res.setStatus(200);
-        res.setContentType("application/json");
-        res.setCharacterEncoding("UTF-8");
-        res.getWriter().write(params.toString());
+        try {
+            JsonObject params = JenkinsJobParser.parseJenkinsJob(projectName, jsc);
+            res.setStatus(200);
+            res.setContentType("application/json");
+            res.setCharacterEncoding("UTF-8");
+            res.getWriter().write(params.toString());
+        } catch (RuntimeException e) {
+            logger.info("Error checking job from Jenkins:", e);
+            res.setStatus(200);
+            res.setContentType("application/json");
+            res.setCharacterEncoding("UTF-8");
+            JsonObject errorMsg = new JsonObject();
+            errorMsg.addProperty("error", "Error checking job from Jenkins. "
+                    + "Please ensure connection to Jenkins is properly configured (admin access required).");
+            res.getWriter().write(errorMsg.toString());
+        }
     }
 
     @Override
@@ -131,11 +148,12 @@ public class JobsServlet extends HttpServlet {
             req.getRequestURI().substring(req.getRequestURI().lastIndexOf('/') + 1);
         String projectName = encodedProjectName.replace("%2F", "/");
 
-        int responseCode = getResponseCode(projectName);
-        if(responseCode != 200) {
-            res.setStatus(responseCode);
+        res.setStatus(200);
+        res.setContentType("text/plain");
+
+        //When an error occurs, returns error message to ProjectScreenSettings
+        if(!safetyCheck(getResponseCode(projectName), res, projectName))
             return;
-        }
 
         /*
          * The actual parameters we send are encoded into a JSON object such that they are contained
@@ -263,7 +281,6 @@ public class JobsServlet extends HttpServlet {
         }
         params.put("junitPath", requestParams.get("junitPath").getAsString());
 
-        // TODO: Replace this with the request body
         JenkinsServerConfiguration jsc = new JenkinsServerConfiguration();
         try {
             jsc.setUri(new URI(jenkinsUrlString));
@@ -291,6 +308,7 @@ public class JobsServlet extends HttpServlet {
         String verifyJobName = JobType.VERIFY.getJobName(projectName);
         String publishJobName = JobType.PUBLISH.getJobName(projectName);
 
+        try{
         if(verifyJobEnabled) {
             JenkinsProvider.createOrUpdateJob(jsc, verifyJobName, JobType.VERIFY, params);
         } else {
@@ -302,8 +320,34 @@ public class JobsServlet extends HttpServlet {
         } else {
             JenkinsProvider.deleteJob(jsc, publishJobName);
         }
+        }
+        catch (RuntimeException e){
+            logger.info("Error checking job from Jenkins:", e);
+            res.setStatus(200);
+            res.setContentType("application/json");
+            res.setCharacterEncoding("UTF-8");
+            JsonObject errorMsg = new JsonObject();
+            errorMsg.addProperty("error", "Error checking job from Jenkins. " +
+                    "Please ensure connection to Jenkins is properly configured (admin access required).");
+            res.getWriter().write(errorMsg.toString());
+        }
+    }
 
-        res.setStatus(200);
-        res.setContentType("text/plain");
+    public static boolean safetyCheck(int responseCode, HttpServletResponse res, String projectName) throws IOException{
+        if(responseCode != 200) {
+            JsonObject errorMsg = new JsonObject();
+            if(responseCode == 404){
+                logger.error("Could not find project with name: " + projectName);
+                errorMsg.addProperty("error", "Could not find project with name: " + projectName);
+                res.getWriter().write(errorMsg.toString());
+            }
+            else {
+                    logger.error("User Authentication Error ");
+                    errorMsg.addProperty("error", "Permission Denied: User Authentication Error ");
+                    res.getWriter().write(errorMsg.toString());
+            }
+            return false;
+        }
+        return true;
     }
 }

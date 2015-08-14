@@ -342,6 +342,13 @@ public class ProjectSettingsScreen extends PluginEntryPoint {
 
                                 @Override
                                 public void onSuccess(JavaScriptObject result) {
+                                    GetJobsResponseOverlay config = (GetJobsResponseOverlay) result;
+                                    if(config.getErrorMsg() != null){
+                                        alertWidget("Error: Action Not Completed",
+                                                config.getErrorMsg().toString())
+                                        .center();
+                                       return;
+                                    }
                                     alertWidget("Jenkins Server Response",
                                                 "Jenkins has been updated successfully with your settings")
                                         .center();
@@ -368,7 +375,12 @@ public class ProjectSettingsScreen extends PluginEntryPoint {
                         @Override
                         public void onSuccess(JavaScriptObject result) {
                             GetJobsResponseOverlay config = (GetJobsResponseOverlay) result;
-
+                            if(config.getErrorMsg() != null){
+                                alertWidget("Error: Action Not Completed",
+                                        config.getErrorMsg().toString())
+                                .center();
+                               return;
+                            }
                             verifyJobEnabled.setValue(config.getVerifyJobEnabled());
                             publishJobEnabled.setValue(config.getPublishJobEnabled());
                             junitEnabled.setValue(config.getJunitEnabled());

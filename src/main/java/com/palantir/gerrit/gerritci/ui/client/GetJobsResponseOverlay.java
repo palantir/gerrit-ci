@@ -43,5 +43,8 @@ public class GetJobsResponseOverlay extends JavaScriptObject {
     public final native String getJunitPath()/*-{
                                                   return this.junitPath;
                                                   }-*/;
+    public final native String getErrorMsg()/*-{
+                                                return this.error;
+                                              }-*/;
 
 }
