@@ -37,7 +37,7 @@ A brief explanation of the fields is given below:
 0. Jenkins Url : The URL of the Jenkins server Gerrit should create jobs on.
 0. Gerrit User : The Gerrit user that Jenkins will use to clone projects and create comments on changes in Gerrit.
 0. Jenkins User : The Jenkins user that Gerrit will use to create, update, and delete jobs.
-0. Jenkins Password : The AD password for the Jenkins user above. The user's API token can also be used.
+0. Jenkins Password : The password for the Jenkins user above. The user's API token can also be used.
 0. Credentials Id : In order to get this value, you must first create a SSH Credential on the Jenkins server. This is  documented here: https://wiki.jenkins-ci.org/display/JENKINS/Credentials+Plugin. 
 1. Once you have created this, configure a job to use the credential and then retreive for the <credentialsId> tag in the job's XML configuration.
 
