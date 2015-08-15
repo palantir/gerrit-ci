@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html>
+<html>
+   <head>
+      <style>body{
+		position:relative;
+		z-index:1;
+		height:100%;
+		min-width: 800px;
+		max-width: 900px;
+      }
+      .box{
+margin: 10;
+width: 400px;
+background-color: Azure ;
+padding: 15px;
+text-alight:left;
+ font-family: "Blender","Helvetica Neue",Helvetica,Arial,sans-serif;
+}</style>
+   </head>
+   <div class="box">
+      <p>This field follows the syntax of cron (with minor differences).
+  Specifically, each line consists of 5 fields separated by TAB or whitespace:</p>
+      <table>
+         <tbody>
+            <tr>
+               <td>MINUTE</td>
+               <td>Minutes within the hour (0-59)</td>
+            </tr>
+            <tr>
+               <td>HOUR</td>
+               <td>The hour of the day (0-23)</td>
+            </tr>
+            <tr>
+               <td>DOM</td>
+               <td>The day of the month (1-31)</td>
+            </tr>
+            <tr>
+               <td>MONTH</td>
+               <td>The month (1-12)</td>
+            </tr>
+            <tr>
+               <td>DOW</td>
+               <td>The day of the week (0-7) where 0 and 7 are Sunday.</td>
+            </tr>
+         </tbody>
+      </table>
+      <p>
+         To specify multiple values for one field, the following operators are
+    available. In the order of precedence,
+         <li>
+            <code>*</code>
+            specifies all valid values
+         </li>
+         <li>
+            <code>M-N</code>
+            specifies a range of values
+         </li>
+         <li>
+            <code>M-N/X</code>
+            or
+            <code>*/X</code>
+            steps by intervals of X through the specified range or whole valid range
+         </li>
+         <li>
+            <code>A,B,...,Z</code>
+            enumerates multiple values
+         </li>
+      </p>
+      <p>
+         The
+         <code>H</code>
+         symbol can be used with a range. For example,
+         <code>H H(0-7) * * *</code>
+         means some time between 12:00 AM (midnight) to 7:59 AM.
+    You can also use step intervals with
+         <code>H</code>
+         , with or without ranges.
+      </p>
+      <p>Example:
+Once every two hours every weekday
+H 9-16/2 * * 1-5; Once a day on the 1st and 15th of every month except December
+H H 1,15 1-11 *</p>
+   </div>
+</html>

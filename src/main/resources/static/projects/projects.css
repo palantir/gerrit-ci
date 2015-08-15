@@ -1,5 +1,6 @@
 .gerrit-ci h2 {
     border-bottom: 2px solid;
+    width: 900px;
 }
 
 .gerrit-ci h2.subsection {
@@ -25,4 +26,10 @@
     margin-left: 20px;
     font-weight: lighter;
     font-size: smaller;
+}
+
+.gerrit-ci .gwt-ToggleButton  {
+    border: none;
+    background: none;
+    padding:none;
 }

@@ -257,6 +257,29 @@ public class JobsServlet extends HttpServlet {
         }
         params.put("publishCommand", requestParams.get("publishCommand").getAsString());
 
+        // cronJobEnabled
+        if(!requestParams.has("cronJobEnabled")) {
+            res.setStatus(400);
+            return;
+        }
+        boolean cronJobEnabled = requestParams.get("cronJobEnabled").getAsJsonObject().get("b").getAsBoolean();
+
+        params.put("cronJobEnabled", cronJobEnabled);
+
+        // cronCommand
+        if(!requestParams.has("cronCommand")) {
+            res.setStatus(400);
+            return;
+        }
+        params.put("cronCommand", requestParams.get("cronCommand").getAsString());
+
+        // cronJob
+        if(!requestParams.has("cronJob")) {
+            res.setStatus(400);
+            return;
+        }
+        params.put("cronJob", requestParams.get("cronJob").getAsString());
+
         // timeoutMinutes
         if(!requestParams.has("timeoutMinutes")) {
             res.setStatus(400);
@@ -320,6 +343,7 @@ public class JobsServlet extends HttpServlet {
 
         String verifyJobName = JobType.VERIFY.getJobName(projectName);
         String publishJobName = JobType.PUBLISH.getJobName(projectName);
+        String cronJobName = JobType.CRON.getJobName(projectName);
 
         try{
         if(verifyJobEnabled) {
@@ -333,6 +357,13 @@ public class JobsServlet extends HttpServlet {
         } else {
             JenkinsProvider.deleteJob(jsc, publishJobName);
         }
+
+        if(cronJobEnabled) {
+            JenkinsProvider.createOrUpdateJob(jsc, cronJobName, JobType.CRON, params);
+        } else {
+            JenkinsProvider.deleteJob(jsc, cronJobName);
+        }
+
         }
         catch (RuntimeException e){
             logger.info("Error checking job from Jenkins:", e);
@@ -344,6 +375,9 @@ public class JobsServlet extends HttpServlet {
                     "Please ensure connection to Jenkins is properly configured (admin access required).");
             res.getWriter().write(errorMsg.toString());
         }
+
+        res.setStatus(200);
+        res.setContentType("text/plain");
     }
 
     public static boolean safetyCheck(int responseCode, HttpServletResponse res, String projectName) throws IOException{
