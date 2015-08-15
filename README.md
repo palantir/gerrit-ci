@@ -7,41 +7,6 @@ will enable project owners to create customized Jenkins jobs with a few simple c
 inspired by [Stashbot](https://github.com/palantir/stashbot) and has similar goals, although there
 are differences in the way it operates.
 
-## Installation
-
-Getting the plugin up and running is fairly straightforward:
-
-```shell
-$ git clone https://github.com/palantir/gerrit-ci.git
-$ ./gradlew build
-```
-
-That will build the jar - which you can find in `./build/libs/gerrit-ci.jar`
-
-Assuming the gerrit is running on localhost, this command will install the plugin (switch out the proper hostname for localhost for remote installs):
-
-```shell
-$ ssh -p 29418 localhost gerrit plugin install -n gerrit-ci.jar - ./build/libs/gerrit-ci.jar
-```
-
-
-## Admin Guide
-
-In order for Gerrit-ci to create, update, and launch jobs on the Jenkins server, Jenkins and Gerrit must be configured to communicate. This setup is done on the gerrit-ci plugin settings's page as follows:
-	
-0. On the Gerrit's Installed Plugin page, click on the gerrit-ci settings gear.
-0. Fill in the fields as required, and click "Save and update."  
-
-A brief explanation of the fields is given below:
-
-0. Jenkins Url : The URL of the Jenkins server Gerrit should create jobs on.
-0. Gerrit User : The Gerrit user that Jenkins will use to clone projects and create comments on changes in Gerrit.
-0. Jenkins User : The Jenkins user that Gerrit will use to create, update, and delete jobs.
-0. Jenkins Password : The AD password for the Jenkins user above. The user's API token can also be used.
-0. Credentials Id : In order to get this value, you must first create a SSH Credential on the Jenkins server. This is  documented here: https://wiki.jenkins-ci.org/display/JENKINS/Credentials+Plugin. 
-1. Once you have created this, configure a job to use the credential and then retreive for the <credentialsId> tag in the job's XML configuration.
-
-
 ## User Guide
 
 ### Job Types
@@ -86,8 +51,8 @@ To get to the configuration screen for your project, follow these steps:
 
 0. Click `Projects` in the Gerrit top menu
 0. Click `List` and find your project
-0. Now that your project is selected, click `Gerrit-CI` in the submenu at the top of the screen. 
-  
+0. Now that your project is selected, click `Gerrit-CI` in the submenu at the top of the screen.
+
 This will bring you to the Gerrit-CI settings page for your project.
 
 ##### Job Enabled
@@ -130,6 +95,41 @@ in Junit test report format. The location of generated raw XML or other report f
 (such as '**/build/cppunit-reports/*.xml') is specified in "Junit test results location". Test results
 can thus be recorded and monitored by Jenkins.
 
+## Installation
+
+Getting the plugin up and running is fairly straightforward:
+
+```shell
+$ git clone https://github.com/palantir/gerrit-ci.git
+$ ./gradlew build
+```
+
+That will build the jar - which you can find in `./build/libs/gerrit-ci.jar`
+
+Assuming the gerrit is running on localhost, this command will install the plugin (switch out the proper hostname for localhost for remote installs):
+
+```shell
+$ ssh -p 29418 localhost gerrit plugin install -n gerrit-ci.jar - ./build/libs/gerrit-ci.jar
+```
+
+
+## Admin Guide
+
+In order for Gerrit-ci to create, update, and launch jobs on the Jenkins server, Jenkins and Gerrit must be configured to communicate. This setup is done on the gerrit-ci plugin settings's page as follows:
+
+0. On the Gerrit's Installed Plugin page, click on the gerrit-ci settings gear.
+0. Fill in the fields as required, and click "Save and update."
+
+A brief explanation of the fields is given below:
+
+0. Jenkins Url : The URL of the Jenkins server Gerrit should create jobs on.
+0. Gerrit User : The Gerrit user that Jenkins will use to clone projects and create comments on changes in Gerrit.
+0. Jenkins User : The Jenkins user that Gerrit will use to create, update, and delete jobs.
+0. Jenkins Password : The password for the Jenkins user above. The user's API token can also be used.
+0. Credentials Id : In order to get this value, you must first create a SSH Credential on the Jenkins server. This is  documented here: https://wiki.jenkins-ci.org/display/JENKINS/Credentials+Plugin.
+   Once you have created this, configure a job to use the credential and then retreive for the <credentialsId> tag in the job's XML configuration.
+
+
 ## Development
 
 For those interested in contributing/extending gerrit-ci, we've tried to make it as possible.  Using Vagrant, you can spin up a VM running both Gerrit and Jenkins.  The build system knows how to push updated plugins directly into the VM to make the testing cycle faster.
@@ -154,8 +154,8 @@ First, clone the repo. Then, run `vagrant up` from within the new cloned directo
 This will download and configure a CentOS7 VM for development use. It will also download, install,
 and configure Gerrit and Jenkins servers. The configuration of these servers is completely handled
 within the Vagrant provisioning process. When `vagrant up` finishes, the servers will be ready for
-installing a build of the plugin. Also, Vagrant sets up port forwarding so ports `8000`, `8080`, 
-and `29418` on the host machine are forwarded to the VM. This means you can access the running 
+installing a build of the plugin. Also, Vagrant sets up port forwarding so ports `8000`, `8080`,
+and `29418` on the host machine are forwarded to the VM. This means you can access the running
 servers from the host machine without needing to SSH into the VM first.
 
 ### Build & Install
