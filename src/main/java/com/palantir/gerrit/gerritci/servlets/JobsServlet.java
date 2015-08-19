@@ -291,13 +291,15 @@ public class JobsServlet extends HttpServlet {
     public Map<String, Object> getJenkinsSpecificParams(FileBasedConfig cfg) throws IOException {
         Map<String, Object> params = new HashMap<String, Object>();
 
-        // publishJobEnabled
-        if(!requestParams.has("publishJobEnabled")) {
-            res.setStatus(400);
-            return;
-        }
-        boolean publishJobEnabled =
-            requestParams.get("publishJobEnabled").getAsJsonObject().get("b").getAsBoolean();
+        JarFile jarFile = new JarFile(sitePaths.plugins_dir.getAbsoluteFile() + File.separator + "gerrit-ci.jar");
+        StringWriter writer = new StringWriter();
+        IOUtils.copy(jarFile.getInputStream(jarFile.getEntry("scripts/prebuild-commands.sh")), writer);
+        // We must escape special characters as this will be rendered into XML
+        String prebuildScript = writer.toString().replace("&", "&amp;").replace(">", "&gt;").replace("<", "&lt;");
+        params.put("cleanCommands", prebuildScript);
+        writer.flush();
+        writer.close();
+        jarFile.close();
 
         String sshPort = gerritConfig.getSshdAddress();
         sshPort = sshPort.substring(sshPort.lastIndexOf(':') + 1);
@@ -459,20 +461,65 @@ public class JobsServlet extends HttpServlet {
         return cfg;
     }
 
-    public static boolean safetyCheck(int responseCode, HttpServletResponse res, String projectName) throws IOException{
-        if(responseCode != 200) {
-            JsonObject errorMsg = new JsonObject();
-            if(responseCode == 404){
-                logger.error("Could not find project with name: " + projectName);
-                errorMsg.addProperty("error", "Could not find project with name: " + projectName);
-                res.getWriter().write(errorMsg.toString());
+    public static JsonObject makeErrorJobObject(String errorMessage) {
+        JsonArray jobsItemWrapper = new JsonArray();
+        JsonObject jenkinsJobWrapper = new JsonObject();
+        jenkinsJobWrapper.addProperty("jobName", "ERROR");
+        jenkinsJobWrapper.addProperty("jobType", "ERROR");
+        JsonArray jenkinsJobItemsWrapper = new JsonArray();
+        JsonObject errorMessageWrapper = new JsonObject();
+        errorMessageWrapper.addProperty("field", "errorMessage");
+        errorMessageWrapper.addProperty("value", errorMessage);
+        jenkinsJobItemsWrapper.add(errorMessageWrapper);
+        jenkinsJobWrapper.add("items", jenkinsJobItemsWrapper);
+        JsonObject objWrapper = new JsonObject();
+        jobsItemWrapper.add(jenkinsJobWrapper);
+        objWrapper.add("items", jobsItemWrapper);
+        return objWrapper;
+    }
+
+    /**
+     * Creates a new job on the specified Jenkins server with the specified name and configuration,
+     * or updates the job with the specified name if it already exists on the server.
+     *
+     * @param jsc The Jenkins server to add the new job to.
+     * @param name The name of the job to add.
+     * @param type The JobType of the job to add.
+     * @param params The configuration parameters for the new job.
+     * @throws IOException
+     * @throws RuntimeException if the job wasn't created for other reasons.
+     */
+    public void createOrUpdateJob(JenkinsServerConfiguration jsc, String name, JobType type,
+            Map<String, Object> params) throws IOException {
+            JenkinsServer server = JenkinsProvider.getJenkinsServer(jsc);
+            VelocityContext velocityContext = new VelocityContext(params);
+            StringWriter writer = new StringWriter();
+            JarFile jarFile = new JarFile(sitePaths.plugins_dir.getAbsoluteFile() + File.separator + "gerrit-ci.jar");
+            if(params.get("junitEnabled").toString().equals("true"))
+                IOUtils.copy(jarFile.getInputStream(jarFile.getEntry("templates"+ type.getTemplate())), writer);
+            else
+                IOUtils.copy(jarFile.getInputStream(jarFile.getEntry("templates"+ type.getTemplateNoJunit())), writer);
+            jarFile.close();
+            String jobTemplate = writer.toString();
+            writer.flush();
+            StringWriter xmlWriter = new StringWriter();
+            Velocity.evaluate(velocityContext, xmlWriter, "", jobTemplate);
+            String jobXml = xmlWriter.toString();
+            if(JenkinsProvider.jobExists(jsc, name)) {
+                try {
+                    server.updateJob(name, jobXml, false);
+                } catch(IOException e) {
+                    throw new RuntimeException(String.format("Failed to update Jenkins job: %s", name),
+                        e);
+                }
+            } else {
+                try {
+                    server.createJob(name, jobXml, false);
+                } catch(IOException e) {
+                    throw new RuntimeException(String.format("Failed to create Jenkins job: %s", name),
+                        e);
+                }
             }
-            else {
-                    logger.error("User Authentication Error ");
-                    errorMsg.addProperty("error", "Permission Denied: User Authentication Error ");
-                    res.getWriter().write(errorMsg.toString());
-            }
-            return false;
         }
 
     private String parseBranchRegex(String s){

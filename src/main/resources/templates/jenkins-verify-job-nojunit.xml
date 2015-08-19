@@ -1,6 +1,6 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <project>
-    <description>Publish build created by Gerrit-CI plugin for project: $projectName</description>
+    <description>Verify build created by Gerrit-CI plugin for project: $projectName</description>
 
     <actions />
     <properties />
@@ -10,7 +10,7 @@
     <keepDependencies>false</keepDependencies>
     <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
     <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
-    <concurrentBuild>false</concurrentBuild>
+    <concurrentBuild>true</concurrentBuild>
 
     <scm class="hudson.plugins.git.GitSCM" plugin="git@1.4.0">
         <configVersion>2</configVersion>
@@ -18,6 +18,7 @@
         <userRemoteConfigs>
             <hudson.plugins.git.UserRemoteConfig>
                 <name>origin</name>
+                <refspec>+$GERRIT_REFSPEC:refs/heads/gerrit</refspec>
                 <url>ssh://${gerritUser}@${host}:${port}/${projectName}.git</url>
                 <credentialsId>${credentialsId}</credentialsId>
             </hudson.plugins.git.UserRemoteConfig>
@@ -25,7 +26,7 @@
 
         <branches>
             <hudson.plugins.git.BranchSpec>
-                <name>$GERRIT_REFNAME</name>
+                <name>$GERRIT_PATCHSET_REVISION</name>
             </hudson.plugins.git.BranchSpec>
         </branches>
 
@@ -79,7 +80,8 @@
             <triggerInformationAction />
 
             <triggerOnEvents>
-                <com.sonyericsson.hudson.plugins.gerrit.trigger.hudsontrigger.events.PluginRefUpdatedEvent />
+                <com.sonyericsson.hudson.plugins.gerrit.trigger.hudsontrigger.events.PluginPatchsetCreatedEvent />
+                <com.sonyericsson.hudson.plugins.gerrit.trigger.hudsontrigger.events.PluginDraftPublishedEvent />
             </triggerOnEvents>
 
             <gerritProjects>
@@ -89,7 +91,7 @@
                     <branches>
                         <com.sonyericsson.hudson.plugins.gerrit.trigger.hudsontrigger.data.Branch>
                             <compareType>REG_EXP</compareType>
-                            <pattern>$publishBranchRegex</pattern>
+                            <pattern>$verifyBranchRegex</pattern>
                         </com.sonyericsson.hudson.plugins.gerrit.trigger.hudsontrigger.data.Branch>
                     </branches>
                 </com.sonyericsson.hudson.plugins.gerrit.trigger.hudsontrigger.data.GerritProject>
@@ -108,11 +110,10 @@
         <hudson.tasks.Shell>
             <command>
 ${cleanCommands}
-${publishCommand}
+${verifyCommand}
             </command>
         </hudson.tasks.Shell>
     </builders>
-
     <buildWrappers>
         <hudson.plugins.timestamper.TimestamperBuildWrapper
             plugin="timestamper@1.5.14" />
@@ -123,58 +124,4 @@ ${publishCommand}
             <operationList/>
         </hudson.plugins.build__timeout.BuildTimeoutWrapper>
     </buildWrappers>
-#if($junitEnabled)
-   <publishers>
-      <hudson.plugins.postbuildtask.PostbuildTask plugin="postbuild-task@1.8">
-         <tasks>
-            <hudson.plugins.postbuildtask.TaskProperties>
-               <logTexts>
-                  <hudson.plugins.postbuildtask.LogProperties>
-                     <logText>BUILD SUCCESS0</logText>
-                     <operator>AND</operator>
-                  </hudson.plugins.postbuildtask.LogProperties>
-               </logTexts>
-               <EscalateStatus>false</EscalateStatus>
-               <RunIfJobSuccessful>true</RunIfJobSuccessful>
-               <script>$esc.xml($successCommand)</script>
-            </hudson.plugins.postbuildtask.TaskProperties>
-            <hudson.plugins.postbuildtask.TaskProperties>
-               <logTexts>
-                  <hudson.plugins.postbuildtask.LogProperties>
-                     <logText>BUILD FAILURE1</logText>
-                     <operator>AND</operator>
-                  </hudson.plugins.postbuildtask.LogProperties>
-               </logTexts>
-               <EscalateStatus>false</EscalateStatus>
-               <RunIfJobSuccessful>false</RunIfJobSuccessful>
-               <script>$esc.xml($failedCommand)</script>
-            </hudson.plugins.postbuildtask.TaskProperties>
-         </tasks>
-      </hudson.plugins.postbuildtask.PostbuildTask>
-      <xunit>
-         <types>
-            <JUnitType>
-               <pattern>$junitPath</pattern>
-               <faildedIfNotNew>true</faildedIfNotNew>
-               <deleteOutputFiles>true</deleteOutputFiles>
-               <stopProcessingIfError>true</stopProcessingIfError>
-            </JUnitType>
-         </types>
-         <thresholds>
-            <org.jenkinsci.plugins.xunit.threshold.FailedThreshold>
-               <unstableThreshold />
-               <unstableNewThreshold />
-               <failureThreshold />
-               <failureNewThreshold />
-            </org.jenkinsci.plugins.xunit.threshold.FailedThreshold>
-            <org.jenkinsci.plugins.xunit.threshold.SkippedThreshold>
-               <unstableThreshold />
-               <unstableNewThreshold />
-               <failureThreshold />
-               <failureNewThreshold />
-            </org.jenkinsci.plugins.xunit.threshold.SkippedThreshold>
-         </thresholds>
-      </xunit>
-   </publishers>
-#end
 </project>

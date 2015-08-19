@@ -1,6 +1,6 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <project>
-    <description>Verify build created by Gerrit-CI plugin for project: $projectName</description>
+    <description>Publish build created by Gerrit-CI plugin for project: $projectName</description>
 
     <actions />
     <properties />
@@ -10,7 +10,7 @@
     <keepDependencies>false</keepDependencies>
     <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
     <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
-    <concurrentBuild>true</concurrentBuild>
+    <concurrentBuild>false</concurrentBuild>
 
     <scm class="hudson.plugins.git.GitSCM" plugin="git@1.4.0">
         <configVersion>2</configVersion>
@@ -18,7 +18,6 @@
         <userRemoteConfigs>
             <hudson.plugins.git.UserRemoteConfig>
                 <name>origin</name>
-                <refspec>+$GERRIT_REFSPEC:refs/heads/gerrit</refspec>
                 <url>ssh://${gerritUser}@${host}:${port}/${projectName}.git</url>
                 <credentialsId>${credentialsId}</credentialsId>
             </hudson.plugins.git.UserRemoteConfig>
@@ -26,7 +25,7 @@
 
         <branches>
             <hudson.plugins.git.BranchSpec>
-                <name>$GERRIT_PATCHSET_REVISION</name>
+                <name>$GERRIT_REFNAME</name>
             </hudson.plugins.git.BranchSpec>
         </branches>
 
@@ -56,64 +55,21 @@
     </scm>
 
     <triggers>
-        <com.sonyericsson.hudson.plugins.gerrit.trigger.hudsontrigger.GerritTrigger
-            plugin="gerrit-trigger@2.11.1">
-            <spec></spec>
-            <gerritBuildStartedVerifiedValue>0</gerritBuildStartedVerifiedValue>
-            <gerritBuildSuccessfulVerifiedValue>1</gerritBuildSuccessfulVerifiedValue>
-            <gerritBuildFailedVerifiedValue>-1</gerritBuildFailedVerifiedValue>
-            <gerritBuildUnstableVerifiedValue>-1</gerritBuildUnstableVerifiedValue>
-            <silentMode>false</silentMode>
-            <escapeQuotes>true</escapeQuotes>
-            <noNameAndEmailParameters>false</noNameAndEmailParameters>
-            <buildStartMessage></buildStartMessage>
-            <buildFailureMessage></buildFailureMessage>
-            <buildSuccessfulMessage></buildSuccessfulMessage>
-            <buildUnstableMessage></buildUnstableMessage>
-            <buildNotBuiltMessage></buildNotBuiltMessage>
-            <buildUnsuccessfulFilepath></buildUnsuccessfulFilepath>
-            <customUrl></customUrl>
-            <serverName>__ANY__</serverName>
-            <allowTriggeringUnreviewedPatches>false</allowTriggeringUnreviewedPatches>
-            <dynamicTriggerConfiguration>false</dynamicTriggerConfiguration>
-            <triggerConfigURL></triggerConfigURL>
-            <triggerInformationAction />
-
-            <triggerOnEvents>
-                <com.sonyericsson.hudson.plugins.gerrit.trigger.hudsontrigger.events.PluginPatchsetCreatedEvent />
-                <com.sonyericsson.hudson.plugins.gerrit.trigger.hudsontrigger.events.PluginDraftPublishedEvent />
-            </triggerOnEvents>
-
-            <gerritProjects>
-                <com.sonyericsson.hudson.plugins.gerrit.trigger.hudsontrigger.data.GerritProject>
-                    <compareType>PLAIN</compareType>
-                    <pattern>$projectName</pattern>
-                    <branches>
-                        <com.sonyericsson.hudson.plugins.gerrit.trigger.hudsontrigger.data.Branch>
-                            <compareType>REG_EXP</compareType>
-                            <pattern>$verifyBranchRegex</pattern>
-                        </com.sonyericsson.hudson.plugins.gerrit.trigger.hudsontrigger.data.Branch>
-                    </branches>
-                </com.sonyericsson.hudson.plugins.gerrit.trigger.hudsontrigger.data.GerritProject>
-            </gerritProjects>
-
-            <skipVote>
-                <onSuccessful>false</onSuccessful>
-                <onFailed>false</onFailed>
-                <onUnstable>false</onUnstable>
-                <onNotBuilt>false</onNotBuilt>
-            </skipVote>
-        </com.sonyericsson.hudson.plugins.gerrit.trigger.hudsontrigger.GerritTrigger>
+		<hudson.triggers.SCMTrigger>
+			<spec>$cronJob</spec>
+				<ignorePostCommitHooks>false</ignorePostCommitHooks>
+		</hudson.triggers.SCMTrigger>
     </triggers>
 
     <builders>
         <hudson.tasks.Shell>
             <command>
 ${cleanCommands}
-${verifyCommand}
+${cronCommand}
             </command>
         </hudson.tasks.Shell>
     </builders>
+
     <buildWrappers>
         <hudson.plugins.timestamper.TimestamperBuildWrapper
             plugin="timestamper@1.5.14" />
@@ -124,8 +80,7 @@ ${verifyCommand}
             <operationList/>
         </hudson.plugins.build__timeout.BuildTimeoutWrapper>
     </buildWrappers>
-#if($junitEnabled)
-  <publishers>
+   <publishers>
       <hudson.plugins.postbuildtask.PostbuildTask plugin="postbuild-task@1.8">
          <tasks>
             <hudson.plugins.postbuildtask.TaskProperties>
@@ -177,5 +132,4 @@ ${verifyCommand}
          </thresholds>
       </xunit>
    </publishers>
-#end
 </project>

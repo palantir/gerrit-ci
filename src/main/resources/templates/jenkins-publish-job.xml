@@ -55,17 +55,60 @@
     </scm>
 
     <triggers>
-		<hudson.triggers.SCMTrigger>
-			<spec>$cronJob</spec>
-				<ignorePostCommitHooks>false</ignorePostCommitHooks>
-		</hudson.triggers.SCMTrigger>
+        <com.sonyericsson.hudson.plugins.gerrit.trigger.hudsontrigger.GerritTrigger
+            plugin="gerrit-trigger@2.11.1">
+            <spec></spec>
+            <gerritBuildStartedVerifiedValue>0</gerritBuildStartedVerifiedValue>
+            <gerritBuildSuccessfulVerifiedValue>1</gerritBuildSuccessfulVerifiedValue>
+            <gerritBuildFailedVerifiedValue>-1</gerritBuildFailedVerifiedValue>
+            <gerritBuildUnstableVerifiedValue>-1</gerritBuildUnstableVerifiedValue>
+            <silentMode>false</silentMode>
+            <escapeQuotes>true</escapeQuotes>
+            <noNameAndEmailParameters>false</noNameAndEmailParameters>
+            <buildStartMessage></buildStartMessage>
+            <buildFailureMessage></buildFailureMessage>
+            <buildSuccessfulMessage></buildSuccessfulMessage>
+            <buildUnstableMessage></buildUnstableMessage>
+            <buildNotBuiltMessage></buildNotBuiltMessage>
+            <buildUnsuccessfulFilepath></buildUnsuccessfulFilepath>
+            <customUrl></customUrl>
+            <serverName>__ANY__</serverName>
+            <allowTriggeringUnreviewedPatches>false</allowTriggeringUnreviewedPatches>
+            <dynamicTriggerConfiguration>false</dynamicTriggerConfiguration>
+            <triggerConfigURL></triggerConfigURL>
+            <triggerInformationAction />
+
+            <triggerOnEvents>
+                <com.sonyericsson.hudson.plugins.gerrit.trigger.hudsontrigger.events.PluginRefUpdatedEvent />
+            </triggerOnEvents>
+
+            <gerritProjects>
+                <com.sonyericsson.hudson.plugins.gerrit.trigger.hudsontrigger.data.GerritProject>
+                    <compareType>PLAIN</compareType>
+                    <pattern>$projectName</pattern>
+                    <branches>
+                        <com.sonyericsson.hudson.plugins.gerrit.trigger.hudsontrigger.data.Branch>
+                            <compareType>REG_EXP</compareType>
+                            <pattern>$publishBranchRegex</pattern>
+                        </com.sonyericsson.hudson.plugins.gerrit.trigger.hudsontrigger.data.Branch>
+                    </branches>
+                </com.sonyericsson.hudson.plugins.gerrit.trigger.hudsontrigger.data.GerritProject>
+            </gerritProjects>
+
+            <skipVote>
+                <onSuccessful>false</onSuccessful>
+                <onFailed>false</onFailed>
+                <onUnstable>false</onUnstable>
+                <onNotBuilt>false</onNotBuilt>
+            </skipVote>
+        </com.sonyericsson.hudson.plugins.gerrit.trigger.hudsontrigger.GerritTrigger>
     </triggers>
 
     <builders>
         <hudson.tasks.Shell>
             <command>
 ${cleanCommands}
-${cronCommand}
+${publishCommand}
             </command>
         </hudson.tasks.Shell>
     </builders>
@@ -80,7 +123,6 @@ ${cronCommand}
             <operationList/>
         </hudson.plugins.build__timeout.BuildTimeoutWrapper>
     </buildWrappers>
-#if($junitEnabled)
    <publishers>
       <hudson.plugins.postbuildtask.PostbuildTask plugin="postbuild-task@1.8">
          <tasks>
@@ -133,5 +175,4 @@ ${cronCommand}
          </thresholds>
       </xunit>
    </publishers>
-#end
 </project>
