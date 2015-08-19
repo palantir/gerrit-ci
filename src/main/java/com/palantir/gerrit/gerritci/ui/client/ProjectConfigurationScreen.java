@@ -130,7 +130,7 @@ public class ProjectConfigurationScreen extends VerticalPanel {
                 add(createCronJob());
             }
         });
-        HTMLPanel buttonPanel = new HTMLPanel(ProjectSettingsScreen.buttonsPanel.toString());
+        HTMLPanel buttonPanel = new HTMLPanel(GerritCiPlugin.buttonsPanel.toString());
         buttonPanel.add(addVerifyJob, "addVerifyJob");
         buttonPanel.add(addCronJob, "addCronJob");
         buttonPanel.add(addPublishJob, "addPublishJob");

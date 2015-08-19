@@ -24,7 +24,7 @@ public class JobPanels {
 
     //Returns a Cron Job Panel with default values.
     private static HTMLPanel getCronPanel() {
-        HTMLPanel cronPanel = new HTMLPanel(ProjectSettingsScreen.cronPanel.toString());
+        HTMLPanel cronPanel = new HTMLPanel(GerritCiPlugin.cronPanel.toString());
         TextBox cronCommand = new TextBox();
         cronCommand.setName("cronCommand");
         cronCommand.setText("./scripts/cron.sh");
@@ -42,7 +42,7 @@ public class JobPanels {
     }
 
     private static HTMLPanel getPublishPanel() {
-        HTMLPanel publishPanel = new HTMLPanel(ProjectSettingsScreen.publishJobPanel.toString());
+        HTMLPanel publishPanel = new HTMLPanel(GerritCiPlugin.publishJobPanel.toString());
         TextBox publishCommand = new TextBox();
         publishCommand.setName("publishCommand");
         publishCommand.setText("./scripts/publish.sh");
@@ -61,7 +61,7 @@ public class JobPanels {
     }
 
     private static HTMLPanel getVerifyPanel() {
-        HTMLPanel verifyPanel = new HTMLPanel(ProjectSettingsScreen.verifyJobPanel.toString());
+        HTMLPanel verifyPanel = new HTMLPanel(GerritCiPlugin.verifyJobPanel.toString());
         TextBox verifyCommand = new TextBox();
         verifyCommand.setName("verifyCommand");
         verifyCommand.setText("./scripts/verify.sh");
@@ -114,11 +114,11 @@ public class JobPanels {
         String name = j.getName();
         HTMLPanel p = new HTMLPanel("");
         if(j.getType().equals("cron"))
-            p = new HTMLPanel(ProjectSettingsScreen.cronPanel.toString());
+            p = new HTMLPanel(GerritCiPlugin.cronPanel.toString());
         else if(j.getType().equals("publish"))
-            p = new HTMLPanel(ProjectSettingsScreen.publishJobPanel.toString());
+            p = new HTMLPanel(GerritCiPlugin.publishJobPanel.toString());
         else if(j.getType().equals("verify"))
-            p = new HTMLPanel(ProjectSettingsScreen.verifyJobPanel.toString());
+            p = new HTMLPanel(GerritCiPlugin.verifyJobPanel.toString());
         else
             return null;
         TextBox jobName = new TextBox();
