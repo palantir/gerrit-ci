@@ -18,12 +18,15 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import com.google.gerrit.plugin.client.rpc.RestApi;
 import com.google.gerrit.plugin.client.screen.Screen;
 import com.google.gwt.dom.client.Style.Unit;
 import com.google.gwt.event.dom.client.ClickEvent;
 import com.google.gwt.event.dom.client.ClickHandler;
+import com.google.gwt.regexp.shared.RegExp;
 import com.google.gwt.user.client.Random;
 import com.google.gwt.user.client.Window;
 import com.google.gwt.user.client.rpc.AsyncCallback;
@@ -193,6 +196,19 @@ public class ProjectConfigurationScreen extends VerticalPanel {
             ArrayList<JobParam> params = new ArrayList<JobParam>();
             String jobType = jobsList.get(jobName).get("jobType");
             for (String field : jobsList.get(jobName).keySet()) {
+                if (field.equals("cronJob")) {
+                    String cronCheck = cronCheck(jobsList.get(jobName).get(field));
+                    if (!cronCheck.equals("success")) {
+                        alertWidget("Warning", cronCheck).center();
+                        return;
+                    }
+                } else if (field.equals("timeoutMinutes")) {
+                    String minutesCheck = timeoutCheck(jobsList.get(jobName).get(field));
+                    if (!minutesCheck.equals("success")) {
+                        alertWidget("Warning", minutesCheck).center();
+                        return;
+                    }
+                }
                 params.add(JobParam.create(field, jobsList.get(jobName).get(field)));
             }
             jobs.add(JenkinsJob.create(jobName, jobType, params));
@@ -250,6 +266,66 @@ public class ProjectConfigurationScreen extends VerticalPanel {
         dialogBox.add(verticalPanel);
         dialogBox.setWidth("400px");
         return dialogBox;
+    }
+
+    /**
+     * Validate accuracy of cron schedule passed in.
+     * Returns "success" or explanation of invalid string.
+     */
+    private String cronCheck(String cronString) {
+        if (cronString == null || cronString.length() < 1) {
+            return "success";
+        }
+        String[] sched = cronString.split("\\s+");
+        if (sched.length != 5) {
+            return "Invalid number of time parameters (should be 5 but found " + sched.length + "). ";
+        }
+        for (int i = 0; i < 2; i++) {
+            try {
+                int val = Integer.parseInt(sched[i]);
+                if (i == 0 && (val < 0 || val > 59)) {
+                    return "Valid minute values are between 0-59.";
+                }
+                if (i == 1 && (val < 0 || val > 23)) {
+                    return "Valid hour values are between 0-23.";
+                }
+            } catch (NumberFormatException e) {
+                if (sched[i].equals("H"))
+                    return "success";
+                return "As to not overload the system, " + "only integers and the letter 'H' are permitted for the "
+                        + "first two time parameters (minute and hour).";
+            }
+        }
+        for (int i = 2; i < 5; i++) {
+            try {
+                int val = Integer.parseInt(sched[i]);
+                if (i == 2 && (val < 1 || val > 31)) {
+                    return "Valid DOM values are between 1-31.";
+                }
+                if (i == 3 && (val < 1 || val > 12)) {
+                    return "Valid month values are between 1-12.";
+                }
+                if (i == 4 && (val < 0 || val > 7)) {
+                    return "Valid DOW values are between 0-7.";
+                }
+            } catch (NumberFormatException e) {
+                RegExp pattern = RegExp.compile("^[0-9,*/H-]*$");
+                boolean b = pattern.test(sched[i]);
+                if (b)
+                    return "success";
+                return "Incorrect Build Syntax. Please review valid parameters.";
+            }
+        }
+        return "success";
+    }
+
+    private String timeoutCheck(String timeoutMinutes) {
+        try {
+            Integer.parseInt(timeoutMinutes);
+            return "success";
+        } catch (Exception e) {
+            return "Please enter a valid number for timeout minutes.";
+        }
     }
 
 }
