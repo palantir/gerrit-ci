@@ -42,9 +42,7 @@ public class ProjectConfigurationScreen extends VerticalPanel {
      */
     private static String projectName;
     private static String encodedProjectName;
-    public static HashMap<String, Map<String, String>> cronJobsList;
-    public static HashMap<String, Map<String, String>> verifyJobsList;
-    public static HashMap<String, Map<String, String>> publishJobsList;
+    public static HashMap<String, Map<String, String>> jobsList;
     public static HashSet<HTMLPanel> activePanels;
     private Button saveButton;
     private Button addCronJob;
@@ -56,9 +54,7 @@ public class ProjectConfigurationScreen extends VerticalPanel {
         public void onLoad(Screen screen) {
             encodedProjectName = Window.Location.getHash().replace("#/x/gerrit-ci/projects/", "");
             projectName = encodedProjectName.replace("%2F", "/");
-            cronJobsList = new HashMap<String, Map<String, String>>();
-            verifyJobsList = new HashMap<String, Map<String, String>>();
-            publishJobsList = new HashMap<String, Map<String, String>>();
+            jobsList = new HashMap<String, Map<String, String>>();
             activePanels = new HashSet<HTMLPanel>();
             screen.show(new ProjectConfigurationScreen(projectName, Unit.EM));
         }
@@ -121,26 +117,29 @@ public class ProjectConfigurationScreen extends VerticalPanel {
         });
         addVerifyJob = new Button("+ Verify Job");
         addVerifyJob.setEnabled(true);
+        addVerifyJob.setStyleName("add");
         addVerifyJob.addClickHandler(new ClickHandler() {
             @Override
             public void onClick(ClickEvent event) {
-                add(createVerifyJob());
+                add(createJob("verify"));
             }
         });
         addPublishJob = new Button("+ Publish Job");
         addPublishJob.setEnabled(true);
+        addPublishJob.setStyleName("add");
         addPublishJob.addClickHandler(new ClickHandler() {
             @Override
             public void onClick(ClickEvent event) {
-                add(createPublishJob());
+                add(createJob("publish"));
             }
         });
         addCronJob = new Button("+ Time-Triggered Job");
         addCronJob.setEnabled(true);
+        addCronJob.setStyleName("add");
         addCronJob.addClickHandler(new ClickHandler() {
             @Override
             public void onClick(ClickEvent event) {
-                add(createCronJob());
+                add(createJob("cron"));
             }
         });
         HTMLPanel buttonPanel = new HTMLPanel(GerritCiPlugin.buttonsPanel.toString());
@@ -156,75 +155,31 @@ public class ProjectConfigurationScreen extends VerticalPanel {
         remove(p);
     }
 
-    private HTMLPanel createVerifyJob() {
-        final HTMLPanel vp = JobPanels.createJobPanel("verify");
+    private HTMLPanel createJob(String jobType) {
+        final HTMLPanel p = JobPanels.createJobPanel(jobType);
         TextBox jobName = new TextBox();
         jobName.setName("jobName");
-        jobName.setText("verify_" + projectName + "_" + Random.nextInt());
+        jobName.setText(jobType + "_" + projectName + "_" + Random.nextInt());
         jobName.setVisible(false);
-        vp.add(jobName);
+        p.add(jobName);
         Button deleteButton = new Button("delete");
         deleteButton.addClickHandler(new ClickHandler() {
             @Override
             public void onClick(ClickEvent event) {
-                deletePanel(vp);
+                deletePanel(p);
             }
         });
-        vp.add(deleteButton);
-        activePanels.add(vp);
-        return vp;
-    }
-
-    private HTMLPanel createCronJob() {
-        final HTMLPanel cp = JobPanels.createJobPanel("cron");
-        TextBox jobName = new TextBox();
-        jobName.setName("jobName");
-        jobName.setText("cron_" + projectName + "_" + Random.nextInt());
-        jobName.setVisible(false);
-        cp.add(jobName);
-        Button deleteButton = new Button("delete");
-        deleteButton.addClickHandler(new ClickHandler() {
-            @Override
-            public void onClick(ClickEvent event) {
-                deletePanel(cp);
-            }
-        });
-        cp.add(deleteButton);
-        activePanels.add(cp);
-        return cp;
-    }
-
-    private HTMLPanel createPublishJob() {
-        final HTMLPanel pp = JobPanels.createJobPanel("publish");
-        TextBox jobName = new TextBox();
-        jobName.setName("jobName");
-        jobName.setText("publish_" + projectName + "_" + Random.nextInt());
-        jobName.setVisible(false);
-        pp.add(jobName);
-        Button deleteButton = new Button("delete");
-        deleteButton.addClickHandler(new ClickHandler() {
-            @Override
-            public void onClick(ClickEvent event) {
-                deletePanel(pp);
-            }
-        });
-        pp.add(deleteButton);
-        activePanels.add(pp);
-        return pp;
+        p.addAndReplaceElement(deleteButton, "delete");
+        activePanels.add(p);
+        return p;
     }
 
     private static void updateActiveJobs() {
         for (HTMLPanel panel : activePanels) {
             Map<String, String> jobParams = JobPanels.getValueMap(panel);
             String jobName = jobParams.get("jobName");
-            String jobType = jobParams.get("jobType");
             jobParams.remove("jobName");
-            if (jobType.equals("cron"))
-                cronJobsList.put(jobName, jobParams);
-            if (jobType.equals("publish"))
-                publishJobsList.put(jobName, jobParams);
-            if (jobType.equals("verify"))
-                verifyJobsList.put(jobName, jobParams);
+            jobsList.put(jobName, jobParams);
         }
     }
 
@@ -234,25 +189,13 @@ public class ProjectConfigurationScreen extends VerticalPanel {
 
         List<JenkinsJob> jobs = new ArrayList<>();
 
-        for (String jobName : cronJobsList.keySet()) {
+        for (String jobName : jobsList.keySet()) {
             ArrayList<JobParam> params = new ArrayList<JobParam>();
-            for (String field : cronJobsList.get(jobName).keySet())
-                params.add(JobParam.create(field, cronJobsList.get(jobName).get(field)));
-            jobs.add(JenkinsJob.create(jobName, "cron", params));
-        }
-
-        for (String jobName : publishJobsList.keySet()) {
-            ArrayList<JobParam> params = new ArrayList<JobParam>();
-            for (String field : publishJobsList.get(jobName).keySet())
-                params.add(JobParam.create(field, publishJobsList.get(jobName).get(field)));
-            jobs.add(JenkinsJob.create(jobName, "publish", params));
-        }
-
-        for (String jobName : verifyJobsList.keySet()) {
-            ArrayList<JobParam> params = new ArrayList<JobParam>();
-            for (String field : verifyJobsList.get(jobName).keySet())
-                params.add(JobParam.create(field, verifyJobsList.get(jobName).get(field)));
-            jobs.add(JenkinsJob.create(jobName, "verify", params));
+            String jobType = jobsList.get(jobName).get("jobType");
+            for (String field : jobsList.get(jobName).keySet()) {
+                params.add(JobParam.create(field, jobsList.get(jobName).get(field)));
+            }
+            jobs.add(JenkinsJob.create(jobName, jobType, params));
         }
 
         if (jobs.isEmpty()) {
