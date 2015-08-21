@@ -10,5 +10,5 @@
     <!-- Specify the entry point class -->
     <entry-point class="com.palantir.gerrit.gerritci.ui.client.GerritCiPlugin" />
 
-    <stylesheet src="projects.css" />
+    <stylesheet src="css/bootstrap.css" />
 </module>

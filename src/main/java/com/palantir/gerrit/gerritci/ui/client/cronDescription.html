@@ -19,25 +19,24 @@ text-alight:left;
 }</style>
    </head>
    <div class="box">
-      <p>This field follows the syntax of cron (with minor differences).
-  Specifically, each line consists of 5 fields separated by TAB or whitespace:</p>
+      <p>Each line consists of 5 fields separated by TAB or whitespace (similar to cron):</p>
       <table>
          <tbody>
             <tr>
                <td>MINUTE</td>
-               <td>Minutes within the hour (0-59)</td>
+               <td>(0-59)</td>
             </tr>
             <tr>
                <td>HOUR</td>
-               <td>The hour of the day (0-23)</td>
+               <td>(0-23)</td>
             </tr>
             <tr>
                <td>DOM</td>
-               <td>The day of the month (1-31)</td>
+               <td>(1-31)</td>
             </tr>
             <tr>
                <td>MONTH</td>
-               <td>The month (1-12)</td>
+               <td>(1-12)</td>
             </tr>
             <tr>
                <td>DOW</td>
@@ -46,8 +45,7 @@ text-alight:left;
          </tbody>
       </table>
       <p>
-         To specify multiple values for one field, the following operators are
-    available. In the order of precedence,
+         In addition:
          <li>
             <code>*</code>
             specifies all valid values
@@ -71,15 +69,9 @@ text-alight:left;
          The
          <code>H</code>
          symbol can be used with a range. For example,
-         <code>H H(0-7) * * *</code>
-         means some time between 12:00 AM (midnight) to 7:59 AM.
-    You can also use step intervals with
-         <code>H</code>
-         , with or without ranges.
+         <code>00 1 H(12-17) * 7</code>
       </p>
       <p>Example:
-Once every two hours every weekday
-H 9-16/2 * * 1-5; Once a day on the 1st and 15th of every month except December
-H H 1,15 1-11 *</p>
+00 11,16 * * * (11:00 and 16:00 everyday at 12:00am) </p>
    </div>
 </html>

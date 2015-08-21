@@ -3,10 +3,17 @@ package com.palantir.gerrit.gerritci.ui.client;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.google.gwt.event.dom.client.ClickEvent;
+import com.google.gwt.event.dom.client.ClickHandler;
+import com.google.gwt.user.client.Window;
+import com.google.gwt.user.client.ui.Button;
 import com.google.gwt.user.client.ui.CheckBox;
+import com.google.gwt.user.client.ui.ClickListener;
 import com.google.gwt.user.client.ui.HTMLPanel;
 import com.google.gwt.user.client.ui.Label;
+import com.google.gwt.user.client.ui.PopupPanel;
 import com.google.gwt.user.client.ui.TextBox;
+import com.google.gwt.user.client.ui.ToggleButton;
 import com.google.gwt.user.client.ui.Widget;
 
 public class JobPanels {
@@ -82,7 +89,7 @@ public class JobPanels {
 
     //Adds general setting to an HTMLPanel
     public static void addCommonFields(HTMLPanel p){
-        CheckBox junitEnabled = new CheckBox("Publish JUnit test result report");
+        CheckBox junitEnabled = new CheckBox();
         junitEnabled.setName("junitEnabled");
         junitEnabled.setValue(true);
         TextBox junitPath = new TextBox();
@@ -126,7 +133,7 @@ public class JobPanels {
         jobName.setText(name);
         jobName.setVisible(false);
         Label jobNameLabel = new Label("Job Id: " + name);
-        p.add(jobNameLabel);
+        p.addAndReplaceElement(jobNameLabel, "jobIdLabel");
         p.add(jobName);
         TextBox jobType = new TextBox();
         jobType.setName("jobType");

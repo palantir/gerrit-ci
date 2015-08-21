@@ -21,7 +21,10 @@ import com.google.gwt.user.client.ui.DialogBox;
 import com.google.gwt.user.client.ui.HTML;
 import com.google.gwt.user.client.ui.HTMLPanel;
 import com.google.gwt.user.client.ui.HasAlignment;
+import com.google.gwt.user.client.ui.Image;
 import com.google.gwt.user.client.ui.Label;
+import com.google.gwt.user.client.ui.PopupPanel;
+import com.google.gwt.user.client.ui.PushButton;
 import com.google.gwt.user.client.ui.TextBox;
 import com.google.gwt.user.client.ui.VerticalPanel;
 
@@ -51,7 +54,17 @@ public class ProjectConfigurationScreen extends VerticalPanel {
 
     ProjectConfigurationScreen(String title, Unit u) {
         setStyleName("gerrit-ci");
-        add(new HTML("Project Title: " + title));
+        HeadingElement header = Document.get().createHElement(1);
+        header.setInnerText("Project: " + title);
+        saveButton = new Button("Save");
+        saveButton.setEnabled(true);
+        saveButton.setStyleName("gerrit-ci");
+        saveButton.addClickHandler(new ClickHandler() {
+            @Override
+            public void onClick(ClickEvent event) {
+                doSave();
+            }
+        });
 
         new RestApi("plugins").id("gerrit-ci").view("jobs").view(encodedProjectName)
         .get(new AsyncCallback<Jobs>() {
@@ -72,22 +85,36 @@ public class ProjectConfigurationScreen extends VerticalPanel {
                                 "Please verify connection to Jenkins" + " is valid in the gerrit-ci admin page "
                                         + "(administrator is access required).").center();
                     }
-
+                    //saveButton.setEnabled(false);
                 } else {
                     int numOfJobs = result.getItems().length();
                     for (int i = 0; i < numOfJobs; i++) {
                         if (result.getItems().get(0).getItems().length() > 0) {
                             JenkinsJob j = result.getItems().get(i);
+                            //We will always get back a list of JenkinsJobs. If none exists,
+                            //thie list will be empty. Else, make a delete button for each job.
                             final HTMLPanel p = JobPanels.showJob(j);
                             if (p != null) {
-                                Button deleteButton = new Button("delete");
+                                final Button deleteButton = new Button("delete");
                                 deleteButton.addClickHandler(new ClickHandler() {
                                     @Override
                                     public void onClick(ClickEvent event) {
                                         deletePanel(p);
                                     }
                                 });
-                                p.add(deleteButton);
+                                p.addAndReplaceElement(deleteButton, "delete");
+                                if(j.getType().equals("cron")){
+                                    final PopupPanel pop = new PopupPanel(true);
+                                    final HTMLPanel cronSyntax = new HTMLPanel(GerritCiPlugin.cronToggle.toString());
+                                    Button toggleButton = new Button("Build Schedule Syntax");
+                                    toggleButton.addClickHandler(new ClickHandler() {
+                                        public void onClick(ClickEvent event) {
+                                            pop.setWidget(cronSyntax);
+                                            pop.showRelativeTo(deleteButton);
+                                        }
+                                    });
+                                    p.addAndReplaceElement(toggleButton, "toggleButton");
+                                }
                                 add(p);
                                 activePanels.add(p);
                             }
@@ -128,6 +155,8 @@ public class ProjectConfigurationScreen extends VerticalPanel {
         buttonPanel.add(addCronJob, "addCronJob");
         buttonPanel.add(addPublishJob, "addPublishJob");
         buttonPanel.add(saveButton, "saveButton");
+        buttonPanel.setStyleName("gerrit-ci");
+        buttonPanel.add(HTML.wrap(header), "projectName");
         add(buttonPanel);
     }
 
@@ -143,13 +172,25 @@ public class ProjectConfigurationScreen extends VerticalPanel {
         jobName.setText(jobType + "_" + projectName + "_" + Random.nextInt(3));
         jobName.setVisible(false);
         p.add(jobName);
-        Button deleteButton = new Button("delete");
+        final Button deleteButton = new Button("delete");
         deleteButton.addClickHandler(new ClickHandler() {
             @Override
             public void onClick(ClickEvent event) {
                 deletePanel(p);
             }
         });
+        if(jobType.equals("cron")){
+            final PopupPanel pop = new PopupPanel(true);
+            final HTMLPanel cronSyntax = new HTMLPanel(GerritCiPlugin.cronToggle.toString());
+            Button toggleButton = new Button("Build Schedule Syntax");
+            toggleButton.addClickHandler(new ClickHandler() {
+                  public void onClick(ClickEvent event) {
+                      pop.setWidget(cronSyntax);
+                      pop.showRelativeTo(deleteButton);
+                  }
+                });
+            p.addAndReplaceElement(toggleButton, "toggleButton");
+        }
         p.addAndReplaceElement(deleteButton, "delete");
         activePanels.add(p);
         return p;
