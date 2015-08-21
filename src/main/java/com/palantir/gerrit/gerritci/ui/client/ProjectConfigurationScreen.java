@@ -67,11 +67,11 @@ public class ProjectConfigurationScreen extends VerticalPanel {
                 if ((result.getItems() != null && result.getItems().get(0).getType().equals("ERROR"))) {
                     try {
                         String msg = result.getItems().get(0).getItems().get(0).getVal();
-                        alertWidget("ERROR: Action not completed", msg).center();
+                        alertWidget("Action not completed", msg).center();
                     } catch (Exception e) {
                         alertWidget(
-                                "ERROR: Action not completed",
-                                "Please verify connection to Jenkins" + "is valid in the gerrit-ci admin page "
+                                "Action not completed",
+                                "Please verify connection to Jenkins" + " is valid in the gerrit-ci admin page "
                                         + "(administrator is access required).").center();
                     }
 
