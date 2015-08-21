@@ -247,4 +247,37 @@ public class ProjectConfigurationScreen extends VerticalPanel {
         return dialogBox;
     }
 
+    /**
+     * Validate accuracy of cron schedule passed in.
+     * Returns "success" or explanation of invalid string.
+     */
+    private String cronCheck(String cronString) {
+        if (cronString == null || cronString.length() < 1) {
+            return "success";
+        }
+        String[] sched = cronString.split("\\s+");
+        if (sched.length != 5) {
+            return "Invalid number of time parameters (should be 5 but found "
+                    + sched.length + "). ";
+        }
+        try {
+            Integer.parseInt(sched[0]);
+            Integer.parseInt(sched[1]);
+        } catch (NumberFormatException e) {
+            return "As to not overload the system, " +
+                    "only integers are permitted for the" +
+                    "first two time parameters (minute and hour).";
+        }
+        return "success";
+    }
+
+    private String timeoutCheck(String timeoutMinutes){
+        try{
+            Integer.parseInt(timeoutMinutes);
+            return "success";
+        }catch(Exception e){
+            return "Please enter a valid number for timout minutes.";
+        }
+    }
+
 }
