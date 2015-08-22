@@ -14,13 +14,14 @@
 package com.palantir.gerrit.gerritci.servlets;
 
 import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.net.URI;
-import java.net.URISyntaxException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Map.Entry;
+import java.util.Scanner;
 import java.util.jar.JarFile;
 
 import javax.servlet.ServletException;
@@ -28,6 +29,9 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.apache.commons.io.IOUtils;
+import org.apache.velocity.VelocityContext;
+import org.apache.velocity.app.Velocity;
 import org.eclipse.jgit.errors.ConfigInvalidException;
 import org.eclipse.jgit.storage.file.FileBasedConfig;
 import org.eclipse.jgit.util.FS;
@@ -42,16 +46,17 @@ import com.google.gerrit.server.config.CanonicalWebUrl;
 import com.google.gerrit.server.config.SitePaths;
 import com.google.gerrit.server.project.NoSuchProjectException;
 import com.google.gerrit.server.project.ProjectControl;
-import com.google.gson.JsonElement;
+import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import com.google.gson.JsonSyntaxException;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
+import com.offbytwo.jenkins.JenkinsServer;
 import com.palantir.gerrit.gerritci.constants.JobType;
 import com.palantir.gerrit.gerritci.models.JenkinsServerConfiguration;
 import com.palantir.gerrit.gerritci.providers.JenkinsProvider;
 import com.palantir.gerrit.gerritci.util.JenkinsJobParser;
-import org.apache.commons.io.IOUtils;
 
 @Singleton
 public class JobsServlet extends HttpServlet {
@@ -118,8 +123,7 @@ public class JobsServlet extends HttpServlet {
             cfg.load();
         } catch(ConfigInvalidException e) {
             logger.error("Error loading config file after get request:", e);
-            JsonObject errorMsg = new JsonObject();
-            errorMsg.addProperty("error", "Please configure gerrit-ci in the Plugins Settings page (requires admin access).");
+            JsonObject errorMsg = makeErrorJobObject(connectionError);
             res.getWriter().write(errorMsg.toString());
             return;
         }
@@ -132,26 +136,59 @@ public class JobsServlet extends HttpServlet {
 
         try {
             jsc.setUri(new URI(jenkinsUrlString));
-        } catch(URISyntaxException e) {
+        } catch (Exception e) {
+            logger.error("Error loading config file after get request:", e);
+            JsonObject errorMsg = makeErrorJobObject(connectionError);
+            res.getWriter().write(errorMsg.toString());
+            return;
         }
         jsc.setUsername(jenkinsUserString);
         jsc.setPassword(jenkinsPasswordString);
         try {
-            JsonObject params = JenkinsJobParser.parseJenkinsJob(projectName, jsc);
-            res.setStatus(200);
-            res.setContentType("application/json");
-            res.setCharacterEncoding("UTF-8");
-            res.getWriter().write(params.toString());
+            ArrayList<String> jobNames = getJenkinJobs(projectName);
+            Map<String, JsonArray> jobs = new HashMap<String, JsonArray>();
+            for (String jobName : jobNames) {
+                String jobType = getTypeFromName(jobName);
+                JsonArray params = JenkinsJobParser.parseJenkinsJob(jobName, jobType, jsc);
+                jobs.put(jobName, params);
+            }
+            JsonObject returnObj = makeJSonRequest(jobs);
+            res.getWriter().write(returnObj.toString());
         } catch (RuntimeException e) {
-            logger.info("Error checking job from Jenkins:", e);
-            res.setStatus(200);
-            res.setContentType("application/json");
-            res.setCharacterEncoding("UTF-8");
-            JsonObject errorMsg = new JsonObject();
-            errorMsg.addProperty("error", "Error checking job from Jenkins. "
-                    + "Please ensure connection to Jenkins is properly configured (admin access required).");
+            logger.error("Error checking job from Jenkins:", e);
+            JsonObject errorMsg = makeErrorJobObject(connectionError);
             res.getWriter().write(errorMsg.toString());
         }
+    }
+
+    private static String getTypeFromName(String name) {
+        if (name.startsWith("cron"))
+            return "cron";
+        else if (name.startsWith("publish"))
+            return "publish";
+        else if (name.startsWith("verify"))
+            return "verify";
+        else
+            return "UNKNOWN";
+    }
+
+    // Returns a list of gerrit-ci created jobs for the project that havn't
+    // been deleted yet on gerrit-ci
+    private ArrayList<String> getJenkinJobs(String projectName) throws IOException {
+        ArrayList<String> jobs = new ArrayList<String>();
+        File projectConfigDirectory = new File(sitePaths.etc_dir, projectName);
+        if (!projectConfigDirectory.exists())
+            projectConfigDirectory.mkdir();
+        File projectConfigFile = new File(projectConfigDirectory, "created_jobs");
+        if (!projectConfigFile.exists())
+            projectConfigFile.createNewFile();
+        Scanner scanner = new Scanner(projectConfigFile);
+        while (scanner.hasNext()) {
+            String line = scanner.next();
+            jobs.add(line);
+        }
+        scanner.close();
+        return jobs;
     }
 
     @Override
@@ -168,65 +205,89 @@ public class JobsServlet extends HttpServlet {
         if(!safetyCheck(getResponseCode(projectName), res, projectName))
             return;
 
-        /*
-         * The actual parameters we send are encoded into a JSON object such that they are contained
-         * in an object under the entry "f". The other top-level keys seem to be useless. In
-         * addition, each key in the parameters object has ":" prefixed to whatever it is the key is
-         * actually named. Thus, by stripping the first character away from each key, we arrive at a
-         * sane JSONObject of request parameters.
-         * Example: {"b": [], "f": {":projectName": "name", ":verifyBranchRegex": * ".*"}}
-         */
-        JsonObject requestBody =
-            (JsonObject) (new JsonParser()).parse(CharStreams.toString(req.getReader()));
-        requestBody = requestBody.get("f").getAsJsonObject();
-
-        JsonObject requestParams = new JsonObject();
-        for(Entry<String, JsonElement> e: requestBody.entrySet()) {
-            requestParams.add(e.getKey().substring(1), e.getValue());
+        FileBasedConfig cfg = new FileBasedConfig(new File(sitePaths.etc_dir, "gerrit-ci.config"), FS.DETECTED);
+        try {
+            cfg.load();
+        } catch (ConfigInvalidException | IOException e) {
+            logger.error("Error loading config file after get request:", e);
         }
 
+        Map<String, Map<String, String>> jobsToParams = new HashMap<String, Map<String, String>>();
+        try {
+            jobsToParams = parseJobRequest(req, projectName);
+        } catch (JsonSyntaxException | NoSuchProjectException e) {
+            logger.error("Failed to parse job request:", e);
+        }
+
+        Map<String, Object> serverParams = getJenkinsSpecificParams(cfg);
+        JenkinsServerConfiguration jsc = new JenkinsServerConfiguration();
+
+        String jenkinsUrlString = cfg.getString("Settings", "Jenkins", "jenkinsURL");
+        String jenkinsUserString = cfg.getString("Settings", "Jenkins", "jenkinsUser");
+        String jenkinsPasswordString = cfg.getString("Settings", "Jenkins", "jenkinsPassword");
+
+        try {
+            jsc.setUri(new URI(jenkinsUrlString));
+        } catch (Exception e) {
+            logger.error("Error setting url " + jenkinsUrlString, e);
+        }
+        jsc.setUsername(jenkinsUserString);
+        jsc.setPassword(jenkinsPasswordString);
+
+        for (String jobName : jobsToParams.keySet()) {
+            if (jobsToParams.get(jobName) == null) {
+                logger.info("Deleting job: " + jobName);
+                JenkinsProvider.deleteJob(jsc, jobName);
+            }
+            // get rid of "" that begin and end parsed jobname and type
+
+            else {
+                String jobPre = jobName.substring(0, 4);
+                Map<String, Object> params = new HashMap<String, Object>();
+                params.putAll(serverParams);
+                for (String field : jobsToParams.get(jobName).keySet()) {
+                    Object val = jobsToParams.get(jobName).get(field);
+                    if(field.endsWith("Regex"))
+                        val = parseBranchRegex((String) val);
+                    if(field.equals("timeoutMinutes")){
+                        try{
+                        val = Integer.parseInt((String) val);}
+                        catch(NumberFormatException e){
+                            val = 30;
+                        }
+                        logger.info("putting timeout minutes: " + val);
+                    }
+                    params.put(field, val);
+                }
+                if (jobPre.equals("cron")) {
+                    createOrUpdateJob(jsc, jobName, JobType.CRON, params);
+                } else if (jobPre.equals("publ")) {
+                    createOrUpdateJob(jsc, jobName, JobType.PUBLISH, params);
+                } else if (jobPre.equals("veri")) {
+                    createOrUpdateJob(jsc, jobName, JobType.VERIFY, params);
+                }
+            }
+        }
+    }
+
+    public static boolean safetyCheck(int responseCode, HttpServletResponse res, String projectName) throws IOException {
+        if (responseCode != 200) {
+            if (responseCode == 404) {
+                logger.error("Could not find project with name: " + projectName);
+                JsonObject errorMsg = makeErrorJobObject("Could not find project with name: " + projectName);
+                res.getWriter().write(errorMsg.toString());
+            } else {
+                logger.error("User Authentication Error ");
+                JsonObject errorMsg = makeErrorJobObject("Permission Denied: User Authentication Error ");
+                res.getWriter().write(errorMsg.toString());
+            }
+            return false;
+        }
+        return true;
+    }
+
+    public Map<String, Object> getJenkinsSpecificParams(FileBasedConfig cfg) throws IOException {
         Map<String, Object> params = new HashMap<String, Object>();
-        params.put("projectName", projectName);
-
-        JarFile jarFile = new JarFile(sitePaths.plugins_dir.getAbsoluteFile() + File.separator +
-                "gerrit-ci.jar");
-        StringWriter writer = new StringWriter();
-        IOUtils.copy(jarFile.getInputStream(jarFile.getEntry("scripts/prebuild-commands.sh")),
-                writer);
-
-        // We must escape special characters as this will be rendered into XML
-        String prebuildScript =
-                writer.toString().replace("&", "&amp;").replace(">", "&gt;").replace("<", "&lt;");
-        params.put("cleanCommands", prebuildScript);
-
-        // verifyJobEnabled
-        if(!requestParams.has("verifyJobEnabled")) {
-            res.setStatus(400);
-            return;
-        }
-        boolean verifyJobEnabled =
-            requestParams.get("verifyJobEnabled").getAsJsonObject().get("b").getAsBoolean();
-
-        // verifyBranchRegex
-        if(!requestParams.has("verifyBranchRegex")) {
-            res.setStatus(400);
-            return;
-        }
-
-        String verifyBranchRegex = requestParams.get("verifyBranchRegex").getAsString();
-        if(verifyBranchRegex.startsWith("refs/heads/")) {
-            verifyBranchRegex = verifyBranchRegex.replace("refs/heads/", "(?!refs/)");
-        }
-        verifyBranchRegex = String.format("(?!refs/meta/)%s", verifyBranchRegex);
-        verifyBranchRegex = String.format("^%s$", verifyBranchRegex);
-        params.put("verifyBranchRegex", verifyBranchRegex);
-
-        // verifyCommand
-        if(!requestParams.has("verifyCommand")) {
-            res.setStatus(400);
-            return;
-        }
-        params.put("verifyCommand", requestParams.get("verifyCommand").getAsString());
 
         // publishJobEnabled
         if(!requestParams.has("publishJobEnabled")) {
@@ -236,103 +297,14 @@ public class JobsServlet extends HttpServlet {
         boolean publishJobEnabled =
             requestParams.get("publishJobEnabled").getAsJsonObject().get("b").getAsBoolean();
 
-        // publishBranchRegex
-        if(!requestParams.has("publishBranchRegex")) {
-            res.setStatus(400);
-            return;
-        }
-        String publishBranchRegex = requestParams.get("publishBranchRegex").getAsString();
-        if(!publishBranchRegex.startsWith("refs/heads/")) {
-            res.setStatus(400);
-            return;
-        }
-        publishBranchRegex = publishBranchRegex.replace("refs/heads/", "(?!refs/)");
-        publishBranchRegex = String.format("^%s$", publishBranchRegex);
-        params.put("publishBranchRegex", publishBranchRegex);
-
-        // publishCommand
-        if(!requestParams.has("publishCommand")) {
-            res.setStatus(400);
-            return;
-        }
-        params.put("publishCommand", requestParams.get("publishCommand").getAsString());
-
-        // cronJobEnabled
-        if(!requestParams.has("cronJobEnabled")) {
-            res.setStatus(400);
-            return;
-        }
-        boolean cronJobEnabled = requestParams.get("cronJobEnabled").getAsJsonObject().get("b").getAsBoolean();
-
-        params.put("cronJobEnabled", cronJobEnabled);
-
-        // cronCommand
-        if(!requestParams.has("cronCommand")) {
-            res.setStatus(400);
-            return;
-        }
-        params.put("cronCommand", requestParams.get("cronCommand").getAsString());
-
-        // cronJob
-        if(!requestParams.has("cronJob")) {
-            res.setStatus(400);
-            return;
-        }
-        params.put("cronJob", requestParams.get("cronJob").getAsString());
-
-        // timeoutMinutes
-        if(!requestParams.has("timeoutMinutes")) {
-            res.setStatus(400);
-            return;
-        }
-        params.put("timeoutMinutes",
-                requestParams.get("timeoutMinutes").getAsJsonObject().get("b").getAsInt());
-
-
-        FileBasedConfig cfg =
-                new FileBasedConfig(new File(sitePaths.etc_dir, "gerrit-ci.config"), FS.DETECTED);
-        try {
-            cfg.load();
-        } catch(ConfigInvalidException e) {
-            logger.info("Error loading config file after get request:", e);
-        }
-
-        String jenkinsUrlString = cfg.getString("Settings", "Jenkins", "jenkinsURL");
-        String jenkinsUserString = cfg.getString("Settings", "Jenkins", "jenkinsUser");
-        String jenkinsPasswordString = cfg.getString("Settings", "Jenkins", "jenkinsPassword");
-
-        // Add junit post build action
-        if(!requestParams.has("junitEnabled")) {
-            res.setStatus(400);
-            return;
-        }
-
-        params.put("junitEnabled", requestParams.get("junitEnabled").getAsJsonObject().get("b")
-           .getAsBoolean());
-
-        // Path to publish junit test results
-        if(!requestParams.has("junitPath")) {
-            res.setStatus(400);
-            return;
-        }
-        params.put("junitPath", requestParams.get("junitPath").getAsString());
-
-        JenkinsServerConfiguration jsc = new JenkinsServerConfiguration();
-        try {
-            jsc.setUri(new URI(jenkinsUrlString));
-        } catch(URISyntaxException e) {
-        }
-        jsc.setUsername(jenkinsUserString);
-        jsc.setPassword(jenkinsPasswordString);
-
         String sshPort = gerritConfig.getSshdAddress();
         sshPort = sshPort.substring(sshPort.lastIndexOf(':') + 1);
 
         String host = canonicalWebUrl.replace("https://", "").replace("http://", "");
-        if(host.contains(":")) {
+        if (host.contains(":")) {
             host = host.substring(0, host.indexOf(':'));
         }
-        if(host.endsWith("/")) {
+        if (host.endsWith("/")) {
             host = host.substring(0, host.length() - 1);
         }
 
@@ -340,44 +312,149 @@ public class JobsServlet extends HttpServlet {
         params.put("host", host);
         params.put("port", sshPort);
         params.put("credentialsId", cfg.getString("Settings", "Jenkins", "credentialsId"));
+        return params;
+    }
 
-        String verifyJobName = JobType.VERIFY.getJobName(projectName);
-        String publishJobName = JobType.PUBLISH.getJobName(projectName);
-        String cronJobName = JobType.CRON.getJobName(projectName);
+    public static JsonObject makeJSonRequest(Map<String, JsonArray> jobs) {
+        JsonArray obj = new JsonArray();
+        for (String jobName : jobs.keySet()) {
+            JsonObject jobObject = new JsonObject();
+            jobObject.addProperty("jobName", jobName);
+            jobObject.addProperty("jobType", getTypeFromName(jobName));
+            jobObject.add("items", jobs.get(jobName));
+            obj.add(jobObject);
+        }
+        JsonObject objWrapper = new JsonObject();
+        objWrapper.add("items", obj);
+        return objWrapper;
+    }
 
-        try{
-        if(verifyJobEnabled) {
-            JenkinsProvider.createOrUpdateJob(jsc, verifyJobName, JobType.VERIFY, params);
-        } else {
-            JenkinsProvider.deleteJob(jsc, verifyJobName);
+    // This parses the jobRequest and updates the config file for the project.
+    // It the creates job config files for new jobs
+    // and marks files of deleted jobs with "DELETED"
+
+    public Map<String, Map<String, String>> parseJobRequest(HttpServletRequest req, String projectName) throws JsonSyntaxException,
+            IOException, NoSuchProjectException {
+        Map<String, Map<String, String>> jobToParams = new HashMap<String, Map<String, String>>();
+
+        File projectConfigDirectory = new File(sitePaths.etc_dir, projectName);
+        if (!projectConfigDirectory.exists())
+            projectConfigDirectory.mkdir();
+        File projectConfigFile = new File(projectConfigDirectory, "created_jobs");
+        if (!projectConfigFile.exists())
+            projectConfigFile.createNewFile();
+
+        JsonObject requestBody = (JsonObject) (new JsonParser()).parse(CharStreams.toString(req.getReader()));
+
+        // get number of jobs
+        // If all jobs are deleted, we must purge jobs
+        int numOfJobs = requestBody.get("items").getAsJsonArray().size();
+
+        ArrayList<String> receivedJobNames = new ArrayList<String>();
+
+        if (numOfJobs < 1) {
+            ArrayList<String> deletedJobs = updateProjectJobFiles(projectConfigFile, projectConfigDirectory, receivedJobNames);
+            for (String deleted : deletedJobs) {
+                jobToParams.put(deleted, null);
+            }
+            return jobToParams;
         }
 
-        if(publishJobEnabled) {
-            JenkinsProvider.createOrUpdateJob(jsc, publishJobName, JobType.PUBLISH, params);
-        } else {
-            JenkinsProvider.deleteJob(jsc, publishJobName);
+        // for each received job, create or rewrite its config file and add to
+        // jobToParams
+        for (int i = 0; i < numOfJobs; i++) {
+            JsonObject jobObject = requestBody.get("items").getAsJsonArray().get(i).getAsJsonObject();
+            String jobName = jobObject.get("jobName").toString();
+            jobName = jobName.substring(1, jobName.length() - 1);
+            receivedJobNames.add(jobName);
+            String type = jobObject.get("jobType").toString();
+            type = type.substring(1, type.length() - 1);
+            int numOfParams = jobObject.get("items").getAsJsonArray().size();
+            JsonArray paramsArray = jobObject.get("items").getAsJsonArray();
+            FileBasedConfig jobConfig = makeJobConfigFile(projectConfigDirectory, jobName,
+                    this.projectControlFactory.controlFor(new NameKey(projectName)).getCurrentUser());
+            Map<String, String> parsedParams = new HashMap<String, String>();
+            parsedParams.put("projectName", projectName);
+            // updating the job config file and storing job info in params map
+            for (int j = 0; j < numOfParams; j++) {
+                String field = paramsArray.get(j).getAsJsonObject().get("field").toString();
+                field = field.substring(1, field.length() - 1);
+                String value = paramsArray.get(j).getAsJsonObject().get("value").toString();
+                value = value.substring(1, value.length() - 1);
+                parsedParams.put(field, value);
+                // update jobconfig files
+                jobConfig.setString("jobType", type, field, value);
+            }
+            jobConfig.save();
+
+            jobToParams.put(jobName, parsedParams);
+        }
+        // update or create project files for all jobs
+        ArrayList<String> deletedJobs = updateProjectJobFiles(projectConfigFile, projectConfigDirectory, receivedJobNames);
+        for (String deleted : deletedJobs) {
+            jobToParams.put(deleted, null);
+        }
+        // returns map of job name to params
+        return jobToParams;
+    }
+
+    public static ArrayList<String> updateProjectJobFiles(File projectFile, File projectConfigDirectory, ArrayList<String> receivedJobNames)
+            throws IOException {
+
+        Scanner scanner = new Scanner(projectFile);
+
+        ArrayList<String> updatedJobs = new ArrayList<String>();
+        ArrayList<String> newJobs = new ArrayList<String>();
+        ArrayList<String> deletedJobs = new ArrayList<String>();
+
+        while (scanner.hasNextLine()) {
+            String line = scanner.nextLine();
+            if (receivedJobNames.contains(line)) {
+                updatedJobs.add(line);
+                receivedJobNames.remove(line);
+            } else {
+                deletedJobs.add(line);
+            }
+        }
+        logger.info("There are " + receivedJobNames.size() + " new jobs");
+        logger.info("There are " + deletedJobs.size() + " deleted jobs");
+        logger.info("There are " + updatedJobs.size() + " updated jobs");
+        for (String s : receivedJobNames) {
+            newJobs.add(s);
         }
 
-        if(cronJobEnabled) {
-            JenkinsProvider.createOrUpdateJob(jsc, cronJobName, JobType.CRON, params);
-        } else {
-            JenkinsProvider.deleteJob(jsc, cronJobName);
+        scanner.close();
+        FileWriter writer = new FileWriter(projectFile, false);
+        for (String s : updatedJobs) {
+            writer.write(s);
+            writer.write("\r\n");
         }
+        for (String s : newJobs) {
+            writer.write(s);
+            writer.write("\r\n");
+        }
+        writer.close();
+        for (File f : projectConfigDirectory.listFiles()) {
+            String filename = f.getName();
+            if (deletedJobs.contains(filename.substring(0, filename.length() - 7))) {
+                File deleted = new File("DELETED_" + filename);
+                deleted.createNewFile();
+            }
+        }
+        return deletedJobs;
+    }
 
+    public static FileBasedConfig makeJobConfigFile(File etc_dir, String jobName, CurrentUser currentUser) {
+        File confFile = new File(etc_dir, jobName + ".config");
+        FileBasedConfig cfg = new FileBasedConfig(confFile, FS.DETECTED);
+        try {
+            cfg.load();
+        } catch (ConfigInvalidException | IOException e) {
+            logger.error("Received PUT request. Error loading project job file:", e);
         }
-        catch (RuntimeException e){
-            logger.info("Error checking job from Jenkins:", e);
-            res.setStatus(200);
-            res.setContentType("application/json");
-            res.setCharacterEncoding("UTF-8");
-            JsonObject errorMsg = new JsonObject();
-            errorMsg.addProperty("error", "Error checking job from Jenkins. " +
-                    "Please ensure connection to Jenkins is properly configured (admin access required).");
-            res.getWriter().write(errorMsg.toString());
-        }
-
-        res.setStatus(200);
-        res.setContentType("text/plain");
+        cfg.clear();
+        cfg.setString("JobName", jobName, "UserUpdated", currentUser.getUserName());
+        return cfg;
     }
 
     public static boolean safetyCheck(int responseCode, HttpServletResponse res, String projectName) throws IOException{
@@ -395,6 +472,13 @@ public class JobsServlet extends HttpServlet {
             }
             return false;
         }
-        return true;
+
+    private String parseBranchRegex(String s){
+        if(s.startsWith("refs/heads/")) {
+            s = s.replace("refs/heads/", "(?!refs/)");
+        }
+        s = String.format("(?!refs/meta/)%s", s);
+        s = String.format("^%s$", s);
+        return s;
     }
 }
