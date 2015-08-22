@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html>
+<html>
+   <head>
+      <style>body{
+      }
+      .jobPanel{
+margin: 10;
+width: 900px;
+background-color: #FAFFFA ;
+text-alight:left;
+ font-family: Arial,sans-serif;
+}
+sectionleft {
+	background-color: #FCFCFC;
+    width:300px;
+    float:left;
+    padding:20px;
+}
+sectionright {
+    width:500px;
+    float:right;
+    padding:20px;
+}
+</style>
+   </head>
+   <div class="jobPanel">
+   <h1>Publish Job</h1>
+   <div id="jobIdLabel"></div>
+<sectionleft>
+		<p id="publishLabel" class="label" p>
+		Publish Job Command
+		</p>
+		<div id="publishCommand"></div>
+		<p id="publishCommandDescription" class="description">
+		Simple command or a shell script to run for publish jobs.
+		</p>
+		<p id="publishBranchRegexLabel" class="label">Regex for branches to publish</p>
+		<div id="publishBranchRegex"></div>
+		<p id="publishBranchRegexDescription"></p>
+</sectionleft>
+  <sectionright>
+		<p id="timeoutsLabel" class="label" p>
+		Timeout Minutes
+		</p>
+		<div id="timeoutMinutes"></div>
+		<p id="timeoutMinutesDescription" class="description">
+		Jenkins will wait this many minutes before terminating the build.
+		</p>
+		<p id="junitLabel" class="label" p>
+		Junit Publish Settings
+		</p>
+		<div id="junitEnabled"></div>
+		<div id="junitPath"></div>
+		<p id="junitPathDescription" class="description">
+		Path to use for junit results (e.g. build/test-results/*.xml).
+		</p>
+</sectionright>
+   </div>
+</html>

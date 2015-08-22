@@ -26,4 +26,17 @@ public interface Resources extends ClientBundle {
     @Source("cronDescription.html")
     TextResource cron();
 
+    @Source("cronPanel.html")
+    TextResource cronJobPanel();
+
+    @Source("publishJobPanel.html")
+    TextResource publishJobPanel();
+
+    @Source("verifyJobPanel.html")
+    TextResource verifyJobPanel();
+
+    @Source("buttonsPanel.html")
+    TextResource buttonsPanel();
+
+
 }

@@ -67,11 +67,13 @@ public class JobsServlet extends HttpServlet {
     private String canonicalWebUrl;
     private SitePaths sitePaths;
     private static final Logger logger = LoggerFactory.getLogger(JobsServlet.class);
+    private static final String connectionError = "Please verify connection to Jenkins" +
+            "is valid in the gerrit-ci settings page " +
+            "(administrator is access required).";
 
     @Inject
-    public JobsServlet(final ProjectControl.Factory projectControlFactory,
-                       final GerritConfig gerritConfig, @CanonicalWebUrl String canonicalWebUrl,
-                       final SitePaths sitePaths) {
+    public JobsServlet(final ProjectControl.Factory projectControlFactory, final GerritConfig gerritConfig,
+            @CanonicalWebUrl String canonicalWebUrl, final SitePaths sitePaths) {
         this.projectControlFactory = projectControlFactory;
         this.gerritConfig = gerritConfig;
         this.canonicalWebUrl = canonicalWebUrl;
