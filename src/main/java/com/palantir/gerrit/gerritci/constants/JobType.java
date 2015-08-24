@@ -44,9 +44,6 @@ public enum JobType {
     private static final Map<JobType, String> templateMap = ImmutableMap.of(VERIFY,
         "/jenkins-verify-job.xml", PUBLISH, "/jenkins-publish-job.xml", CRON, "/jenkins-cron-job.xml");
 
-    private static final Map<JobType, String> templateMapNoJunit = ImmutableMap.of(VERIFY,
-            "/jenkins-verify-job-nojunit.xml", PUBLISH, "/jenkins-publish-job-nojunit.xml", CRON, "/jenkins-cron-job-nojunit.xml");
-
 
     /**
      * Given a JobType, gives the filename of the template file to use when creating new builds.
@@ -55,15 +52,6 @@ public enum JobType {
      */
     public String getTemplate() {
         return templateMap.get(this);
-    }
-
-    /**
-     * Given a JobType, gives the filename of the template file to use when creating new builds.
-     *
-     * @return filename of the template file for this type of JobType.
-     */
-    public String getTemplateNoJunit() {
-        return templateMapNoJunit.get(this);
     }
 
     /**

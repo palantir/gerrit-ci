@@ -55,10 +55,9 @@
     </scm>
 
     <triggers>
-		<hudson.triggers.SCMTrigger>
-			<spec>$cronJob</spec>
-				<ignorePostCommitHooks>false</ignorePostCommitHooks>
-		</hudson.triggers.SCMTrigger>
+		<hudson.triggers.TimerTrigger>
+			<spec>${cronJob}</spec>
+		</hudson.triggers.TimerTrigger>
     </triggers>
 
     <builders>
@@ -80,7 +79,7 @@ ${cronCommand}
             <operationList/>
         </hudson.plugins.build__timeout.BuildTimeoutWrapper>
     </buildWrappers>
-   <publishers>
+  <publishers>
       <hudson.plugins.postbuildtask.PostbuildTask plugin="postbuild-task@1.8">
          <tasks>
             <hudson.plugins.postbuildtask.TaskProperties>

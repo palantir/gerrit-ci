@@ -401,10 +401,10 @@ public class JobsServlet extends HttpServlet {
             VelocityContext velocityContext = new VelocityContext(params);
             StringWriter writer = new StringWriter();
             JarFile jarFile = new JarFile(sitePaths.plugins_dir.getAbsoluteFile() + File.separator + "gerrit-ci.jar");
-            if(params.get("junitEnabled").toString().equals("true"))
-                IOUtils.copy(jarFile.getInputStream(jarFile.getEntry("templates"+ type.getTemplate())), writer);
-            else
-                IOUtils.copy(jarFile.getInputStream(jarFile.getEntry("templates"+ type.getTemplateNoJunit())), writer);
+            if(params.get("junitEnabled").toString().equals("false")){
+                params.put("junitPath", "");
+            }
+            IOUtils.copy(jarFile.getInputStream(jarFile.getEntry("templates"+ type.getTemplate())), writer);
             jarFile.close();
             String jobTemplate = writer.toString();
             writer.flush();
