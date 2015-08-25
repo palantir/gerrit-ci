@@ -168,6 +168,18 @@ public class JobsServlet extends HttpServlet {
         if(!safetyCheck(getResponseCode(projectName), res, projectName))
             return;
 
+        FileBasedConfig cfg =
+                new FileBasedConfig(new File(sitePaths.etc_dir, "gerrit-ci.config"), FS.DETECTED);
+        try {
+            cfg.load();
+        } catch(ConfigInvalidException e) {
+            logger.info("Error loading config file after get request:", e);
+        }
+
+        String jenkinsUrlString = cfg.getString("Settings", "Jenkins", "jenkinsURL");
+        String jenkinsUserString = cfg.getString("Settings", "Jenkins", "jenkinsUser");
+        String jenkinsPasswordString = cfg.getString("Settings", "Jenkins", "jenkinsPassword");
+
         /*
          * The actual parameters we send are encoded into a JSON object such that they are contained
          * in an object under the entry "f". The other top-level keys seem to be useless. In
@@ -287,19 +299,6 @@ public class JobsServlet extends HttpServlet {
         }
         params.put("timeoutMinutes",
                 requestParams.get("timeoutMinutes").getAsJsonObject().get("b").getAsInt());
-
-
-        FileBasedConfig cfg =
-                new FileBasedConfig(new File(sitePaths.etc_dir, "gerrit-ci.config"), FS.DETECTED);
-        try {
-            cfg.load();
-        } catch(ConfigInvalidException e) {
-            logger.info("Error loading config file after get request:", e);
-        }
-
-        String jenkinsUrlString = cfg.getString("Settings", "Jenkins", "jenkinsURL");
-        String jenkinsUserString = cfg.getString("Settings", "Jenkins", "jenkinsUser");
-        String jenkinsPasswordString = cfg.getString("Settings", "Jenkins", "jenkinsPassword");
 
         // Add junit post build action
         if(!requestParams.has("junitEnabled")) {
