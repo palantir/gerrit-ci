@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html>
+<html>
+   <head>
+      <style>body{
+		position:relative;
+		z-index:1;
+		height:100%;
+		min-width: 800px;
+		max-width: 900px;
+      }
+      .box{
+margin: 10;
+width: 400px;
+background-color: Azure ;
+padding: 15px;
+text-alight:left;
+ font-family: "Blender","Helvetica Neue",Helvetica,Arial,sans-serif;
+}</style>
+   </head>
+   <div class="box">
+      <p>Each line consists of 5 fields separated by TAB or whitespace (similar to cron):</p>
+      <table>
+         <tbody>
+            <tr>
+               <td>MINUTE</td>
+               <td>(0-59)</td>
+            </tr>
+            <tr>
+               <td>HOUR</td>
+               <td>(0-23)</td>
+            </tr>
+            <tr>
+               <td>DOM</td>
+               <td>(1-31)</td>
+            </tr>
+            <tr>
+               <td>MONTH</td>
+               <td>(1-12)</td>
+            </tr>
+            <tr>
+               <td>DOW</td>
+               <td>The day of the week (0-7) where 0 and 7 are Sunday.</td>
+            </tr>
+         </tbody>
+      </table>
+      <p>
+         In addition:
+         <li>
+            <code>*</code>
+            specifies all valid values
+         </li>
+         <li>
+            <code>M-N</code>
+            specifies a range of values
+         </li>
+         <li>
+            <code>M-N/X</code>
+            or
+            <code>*/X</code>
+            steps by intervals of X through the specified range or whole valid range
+         </li>
+         <li>
+            <code>A,B,...,Z</code>
+            enumerates multiple values
+         </li>
+      </p>
+      <p>
+         The
+         <code>H</code>
+         symbol can be used with a range. For example,
+         <code>00 1 H(12-17) * 7</code>
+      </p>
+      <p>Example:
+00 11,16 * * * (11:00 and 16:00 everyday at 12:00am) </p>
+   </div>
+</html>

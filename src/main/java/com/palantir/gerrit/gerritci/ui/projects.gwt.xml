@@ -5,9 +5,10 @@
     <inherits name="com.google.gerrit.Plugin" />
     <inherits name="com.google.gwt.http.HTTP" />
     <inherits name="com.google.gwt.json.JSON" />
+	<inherits name="com.google.gwt.resources.Resources" />
 
     <!-- Specify the entry point class -->
-    <entry-point class="com.palantir.gerrit.gerritci.ui.client.ProjectSettingsScreen" />
+    <entry-point class="com.palantir.gerrit.gerritci.ui.client.GerritCiPlugin" />
 
-    <stylesheet src="projects.css" />
+    <stylesheet src="css/bootstrap.css" />
 </module>
