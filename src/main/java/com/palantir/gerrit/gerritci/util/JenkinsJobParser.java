@@ -16,8 +16,8 @@ package com.palantir.gerrit.gerritci.util;
 import org.jsoup.Jsoup;
 import org.jsoup.parser.Parser;
 
+import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
-import com.palantir.gerrit.gerritci.constants.JobType;
 import com.palantir.gerrit.gerritci.models.JenkinsServerConfiguration;
 import com.palantir.gerrit.gerritci.providers.JenkinsProvider;
 
@@ -46,31 +46,41 @@ public class JenkinsJobParser {
      * @param jsc The Jenkins server that the project lives on.
      * @return A JsonObject containing all the settings that could be parsed.
      */
-    public static JsonObject parseJenkinsJob(String projectName, JenkinsServerConfiguration jsc) {
-        JsonObject settings = new JsonObject();
-        for(JobType type: JobType.values()) {
-            String jobName = type.getJobName(projectName);
-            boolean exists = JenkinsProvider.jobExists(jsc, jobName);
-            settings.addProperty(String.format("%sJobEnabled", type), exists);
-            if(exists) {
-                String jobXml = JenkinsProvider.getJobXml(jsc, jobName);
-                settings.addProperty(String.format("%sBranchRegex", type), getBranchRegex(jobXml));
-                settings.addProperty(String.format("%sCommand", type), getCommand(jobXml));
-                settings.addProperty("timeoutMinutes", getTimeoutMinutes(jobXml));
-                settings.addProperty("cronJob", getCronJob(jobXml));
-                String junitPath = getJunitPath(jobXml);
-                if (junitPath == "") {
-                    settings.addProperty("junitEnabled", false);
-                } else {
-                    settings.addProperty("junitEnabled", true);
-                    settings.addProperty("junitPath", junitPath);
-                }
+    public static JsonArray parseJenkinsJob(String jobName, String jobType, JenkinsServerConfiguration jsc) {
+        JsonArray items = new JsonArray();
+        boolean exists = JenkinsProvider.jobExists(jsc, jobName);
+
+        if(exists) {
+            items.add(jsonObj("jobName", jobName));
+            items.add(jsonObj("jobType", jobType));
+            String jobXml = JenkinsProvider.getJobXml(jsc, jobName);
+            if(jobType.equals("verify") || jobType.equals("publish")) {
+                items.add(jsonObj(String.format("%sBranchRegex", jobType), getBranchRegex(jobXml)));
+            } else {
+                items.add(jsonObj("cronJob", getCronJob(jobXml)));
             }
+
+            items.add(jsonObj(String.format("%sCommand", jobType), getCommand(jobXml)));
+            items.add(jsonObj("timeoutMinutes", getTimeoutMinutes(jobXml).toString()));
+
+            String junitPath = getJunitPath(jobXml);
+            if (junitPath == null || junitPath.equals("")) {
+                items.add(jsonObj("junitEnabled", "false"));
+            } else {
+                items.add(jsonObj("junitEnabled", "true"));
+            }
+            items.add(jsonObj("junitPath", junitPath));
         }
 
-        return settings;
+        return items;
     }
 
+    private static JsonObject jsonObj(String field, String value) {
+        JsonObject obj = new JsonObject();
+        obj.addProperty("field", field);
+        obj.addProperty("value", value);
+        return obj;
+    }
     private static String getBranchRegex(String jobXml) {
         try {
             String branchRegex = Jsoup.parse(jobXml, "", Parser.xmlParser())
