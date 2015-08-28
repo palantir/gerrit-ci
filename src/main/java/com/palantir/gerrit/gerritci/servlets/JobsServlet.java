@@ -17,10 +17,13 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.StringWriter;
+import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Scanner;
+import java.util.TimeZone;
 import java.util.jar.JarFile;
 
 import javax.servlet.ServletException;
@@ -31,8 +34,21 @@ import javax.servlet.http.HttpServletResponse;
 import org.apache.commons.io.IOUtils;
 import org.apache.velocity.VelocityContext;
 import org.apache.velocity.app.Velocity;
+import org.eclipse.jgit.api.errors.GitAPIException;
+import org.eclipse.jgit.api.errors.NoFilepatternException;
 import org.eclipse.jgit.errors.ConfigInvalidException;
+import org.eclipse.jgit.lib.CommitBuilder;
+import org.eclipse.jgit.lib.Constants;
+import org.eclipse.jgit.lib.FileMode;
+import org.eclipse.jgit.lib.ObjectId;
+import org.eclipse.jgit.lib.ObjectInserter;
+import org.eclipse.jgit.lib.PersonIdent;
+import org.eclipse.jgit.lib.Ref;
+import org.eclipse.jgit.lib.RefUpdate;
+import org.eclipse.jgit.lib.Repository;
+import org.eclipse.jgit.lib.TreeFormatter;
 import org.eclipse.jgit.storage.file.FileBasedConfig;
+import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
 import org.eclipse.jgit.util.FS;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,6 +57,7 @@ import com.google.common.io.CharStreams;
 import com.google.gerrit.common.data.GerritConfig;
 import com.google.gerrit.reviewdb.client.Project.NameKey;
 import com.google.gerrit.server.CurrentUser;
+import com.google.gerrit.server.IdentifiedUser;
 import com.google.gerrit.server.config.CanonicalWebUrl;
 import com.google.gerrit.server.config.SitePaths;
 import com.google.gerrit.server.project.NoSuchProjectException;
@@ -165,7 +182,7 @@ public class JobsServlet extends HttpServlet {
         Map<String, Map<String, String>> jobsToParams = new HashMap<String, Map<String, String>>();
         try {
             jobsToParams = parseJobRequest(req, projectName);
-        } catch (JsonSyntaxException | NoSuchProjectException e) {
+        } catch (JsonSyntaxException | NoSuchProjectException | GitAPIException e) {
             logger.error("Failed to parse job request:", e);
         }
 
@@ -225,7 +242,7 @@ public class JobsServlet extends HttpServlet {
     // and marks files of deleted jobs with "DELETED"
 
     public Map<String, Map<String, String>> parseJobRequest(HttpServletRequest req, String projectName) throws JsonSyntaxException,
-            IOException, NoSuchProjectException {
+            IOException, NoSuchProjectException, NoFilepatternException, GitAPIException {
         Map<String, Map<String, String>> jobToParams = new HashMap<String, Map<String, String>>();
 
         File projectConfigDirectory = new File(sitePaths.etc_dir, projectName);
@@ -251,6 +268,14 @@ public class JobsServlet extends HttpServlet {
             return jobToParams;
         }
 
+        CurrentUser currentUser = this.projectControlFactory.controlFor(new NameKey(projectName)).getCurrentUser();
+        String gitPath = getGitPath(sitePaths);
+        File gitDir = new File(gitPath, projectName + ".git");
+        Repository repository = new FileRepositoryBuilder().setGitDir(gitDir).build();
+        ObjectInserter objectInserter = repository.newObjectInserter();
+        HashMap<String, ObjectId> jobsToIds = new HashMap<String, ObjectId>();
+        // assign file name and append to tree
+        TreeFormatter treeFormatter = new TreeFormatter();
         // for each received job, create or rewrite its config file and add to
         // jobToParams
         for (int i = 0; i < numOfJobs; i++) {
@@ -263,8 +288,7 @@ public class JobsServlet extends HttpServlet {
             type = type.substring(1, type.length() - 1);
             int numOfParams = jobObject.get("items").getAsJsonArray().size();
             JsonArray paramsArray = jobObject.get("items").getAsJsonArray();
-            FileBasedConfig jobConfig = makeJobConfigFile(projectConfigDirectory, jobName,
-                    this.projectControlFactory.controlFor(new NameKey(projectName)).getCurrentUser());
+            FileBasedConfig jobConfig = makeJobConfigFile(projectConfigDirectory, jobName, currentUser);
             Map<String, String> parsedParams = new HashMap<String, String>();
             parsedParams.put("projectName", projectName);
             for (int j = 0; j < numOfParams; j++) {
@@ -277,9 +301,15 @@ public class JobsServlet extends HttpServlet {
                 jobConfig.setString("jobType", type, field, value);
             }
             jobConfig.save();
-
+            jobsToIds.put(jobName, createGitFileId(repository, jobConfig, objectInserter, jobName));
             jobToParams.put(jobName, parsedParams);
         }
+        for (String jobName : jobsToIds.keySet()) {
+            treeFormatter.append(jobName + ".config", FileMode.REGULAR_FILE, jobsToIds.get(jobName));
+        }
+        ObjectId treeId = objectInserter.insert(treeFormatter);
+        objectInserter.flush();
+        updateProjectRef(treeId, objectInserter, repository, currentUser);
         // update or create project files for all jobs
         ArrayList<String> deletedJobs = updateProjectJobFiles(projectConfigFile, projectConfigDirectory, receivedJobNames);
         for (String deleted : deletedJobs) {
@@ -323,13 +353,6 @@ public class JobsServlet extends HttpServlet {
         for (String s : newJobs) {
             writer.write(s);
             writer.write("\n");
-        }
-        for (File f : projectConfigDirectory.listFiles()) {
-            String filename = f.getName();
-            if (deletedJobs.contains(filename.substring(0, filename.length() - 7))) {
-                File deleted = new File("DELETED_" + filename);
-                deleted.createNewFile();
-            }
         }
         writer.close();
         return deletedJobs;
@@ -380,6 +403,52 @@ public class JobsServlet extends HttpServlet {
             return false;
         }
         return true;
+    }
+
+    public static String getGitPath(SitePaths sitePaths) throws IOException {
+        FileBasedConfig cfg = new FileBasedConfig(new File(sitePaths.etc_dir, "gerrit.config"), FS.DETECTED);
+        try {
+            cfg.load();
+        } catch (ConfigInvalidException e) {
+            logger.error("Received GET Request. Error loading gerrit-ci.config file:", e);
+        }
+        return cfg.getString("gerrit", null, "basePath");
+    }
+
+    public static ObjectId createGitFileId(Repository repository, FileBasedConfig jobConfig, ObjectInserter objectInserter, String jobName) throws UnsupportedEncodingException, IOException{
+        ObjectId fileId = objectInserter.insert(Constants.OBJ_BLOB, jobConfig.toText().getBytes("utf-8"));
+        objectInserter.flush();
+        logger.info("Created blobId " + fileId + " for " + jobName);
+        return fileId;
+    }
+
+    public static void updateProjectRef(ObjectId treeId, ObjectInserter objectInserter, Repository repository, CurrentUser currentUser)
+            throws IOException, NoFilepatternException, GitAPIException {
+        // Create a branch
+        Ref gerritCiRef = repository.getRef("refs/meta/gerrit-ci");
+        CommitBuilder commitBuilder = new CommitBuilder();
+        commitBuilder.setTreeId(treeId);
+        logger.info("treeId: " + treeId);
+
+        if (gerritCiRef != null) {
+            ObjectId prevCommit = gerritCiRef.getObjectId();
+            logger.info("prevCommit: " + prevCommit);
+            commitBuilder.setParentId(prevCommit);
+        }
+        // build commit
+        logger.info("Adding git tree : " + treeId);
+        commitBuilder.setMessage("Modify project build rules.");
+        final IdentifiedUser iUser = (IdentifiedUser) currentUser;
+        PersonIdent user = new PersonIdent(currentUser.getUserName(), iUser.getEmailAddresses().iterator().next());
+        commitBuilder.setAuthor(user);
+        commitBuilder.setCommitter(user);
+        ObjectId commitId = objectInserter.insert(commitBuilder);
+        objectInserter.flush();
+        logger.info(" Making new commit: " + commitId);
+        RefUpdate newRef = repository.updateRef("refs/meta/gerrit-ci");
+        newRef.setNewObjectId(commitId);
+        newRef.update();
+        repository.close();
     }
 
     /**
