@@ -13,15 +13,17 @@
 //   limitations under the License.
 package com.palantir.gerrit.gerritci.providers;
 
+import java.io.IOException;
+import java.io.StringWriter;
+import java.util.Map;
+
+import org.apache.velocity.Template;
+import org.apache.velocity.VelocityContext;
+
 import com.offbytwo.jenkins.JenkinsServer;
 import com.offbytwo.jenkins.model.Job;
 import com.palantir.gerrit.gerritci.constants.JobType;
 import com.palantir.gerrit.gerritci.models.JenkinsServerConfiguration;
-import org.apache.velocity.Template;
-import org.apache.velocity.VelocityContext;
-import java.io.IOException;
-import java.io.StringWriter;
-import java.util.Map;
 
 /**
  * This class provides a set of methods that are higher-level abstractions of the JenkinsServer
