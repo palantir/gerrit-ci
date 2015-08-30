@@ -42,7 +42,8 @@ public enum JobType {
         "publish", CRON, "cron");
 
     private static final Map<JobType, String> templateMap = ImmutableMap.of(VERIFY,
-        "/jenkins-verify-job.vm", PUBLISH, "/jenkins-publish-job.vm", CRON, "/jenkins-cron-job.vm");
+        "/jenkins-verify-job.xml", PUBLISH, "/jenkins-publish-job.xml", CRON, "/jenkins-cron-job.xml");
+
 
     /**
      * Given a JobType, gives the filename of the template file to use when creating new builds.

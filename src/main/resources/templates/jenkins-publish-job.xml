@@ -123,7 +123,6 @@ ${publishCommand}
             <operationList/>
         </hudson.plugins.build__timeout.BuildTimeoutWrapper>
     </buildWrappers>
-#if($junitEnabled)
    <publishers>
       <hudson.plugins.postbuildtask.PostbuildTask plugin="postbuild-task@1.8">
          <tasks>
@@ -176,5 +175,4 @@ ${publishCommand}
          </thresholds>
       </xunit>
    </publishers>
-#end
 </project>

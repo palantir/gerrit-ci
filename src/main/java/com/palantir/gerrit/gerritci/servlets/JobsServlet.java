@@ -30,6 +30,8 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.apache.commons.io.IOUtils;
+import org.apache.velocity.VelocityContext;
+import org.apache.velocity.app.Velocity;
 import org.eclipse.jgit.errors.ConfigInvalidException;
 import org.eclipse.jgit.storage.file.FileBasedConfig;
 import org.eclipse.jgit.util.FS;
@@ -50,6 +52,7 @@ import com.google.gson.JsonParser;
 import com.google.gson.JsonSyntaxException;
 import com.google.inject.Inject;
 import com.google.inject.Singleton;
+import com.offbytwo.jenkins.JenkinsServer;
 import com.palantir.gerrit.gerritci.constants.JobType;
 import com.palantir.gerrit.gerritci.models.JenkinsServerConfiguration;
 import com.palantir.gerrit.gerritci.providers.JenkinsProvider;
@@ -258,11 +261,11 @@ public class JobsServlet extends HttpServlet {
                     params.put(field, val);
                 }
                 if (jobName.startsWith("cron")) {
-                    JenkinsProvider.createOrUpdateJob(jsc, jobName, JobType.CRON, params);
+                    createOrUpdateJob(jsc, jobName, JobType.CRON, params);
                 } else if (jobName.startsWith("publish")) {
-                    JenkinsProvider.createOrUpdateJob(jsc, jobName, JobType.PUBLISH, params);
+                    createOrUpdateJob(jsc, jobName, JobType.PUBLISH, params);
                 } else if (jobName.startsWith("verify")) {
-                    JenkinsProvider.createOrUpdateJob(jsc, jobName, JobType.VERIFY, params);
+                    createOrUpdateJob(jsc, jobName, JobType.VERIFY, params);
                 }
             }
         }
@@ -270,19 +273,6 @@ public class JobsServlet extends HttpServlet {
 
     public Map<String, Object> getJenkinsSpecificParams(FileBasedConfig cfg) throws IOException {
         Map<String, Object> params = new HashMap<String, Object>();
-
-        JarFile jarFile = new JarFile(sitePaths.plugins_dir.getAbsoluteFile() + File.separator +
-                "gerrit-ci.jar");
-        StringWriter writer = new StringWriter();
-        IOUtils.copy(jarFile.getInputStream(jarFile.getEntry("scripts/prebuild-commands.sh")),
-                writer);
-
-        // We must escape special characters as this will be rendered into XML
-        String prebuildScript =
-                writer.toString().replace("&", "&amp;").replace(">", "&gt;").replace("<", "&lt;");
-        params.put("cleanCommands", prebuildScript);
-        jarFile.close();
-
         String sshPort = gerritConfig.getSshdAddress();
         sshPort = sshPort.substring(sshPort.lastIndexOf(':') + 1);
 
@@ -475,6 +465,51 @@ public class JobsServlet extends HttpServlet {
             return false;
         }
         return true;
+    }
+
+    /**
+     * Creates a new job on the specified Jenkins server with the specified name and configuration,
+     * or updates the job with the specified name if it already exists on the server.
+     *
+     * @param jsc The Jenkins server to add the new job to.
+     * @param name The name of the job to add.
+     * @param type The JobType of the job to add.
+     * @param params The configuration parameters for the new job.
+     * @throws IOException
+     * @throws RuntimeException if the job wasn't created for other reasons.
+     */
+    public void createOrUpdateJob(JenkinsServerConfiguration jsc, String name, JobType type, Map<String, Object> params) throws IOException {
+        JenkinsServer server = JenkinsProvider.getJenkinsServer(jsc);
+        VelocityContext velocityContext = new VelocityContext(params);
+        StringWriter writer = new StringWriter();
+        JarFile jarFile = new JarFile(sitePaths.plugins_dir.getAbsoluteFile() + File.separator + "gerrit-ci.jar");
+        if (params.get("junitEnabled").toString().equals("false")) {
+            params.put("junitPath", "");
+        }
+        IOUtils.copy(jarFile.getInputStream(jarFile.getEntry("templates" + type.getTemplate())), writer);
+        String jobTemplate = writer.toString();
+        writer = new StringWriter();
+        IOUtils.copy(jarFile.getInputStream(jarFile.getEntry("scripts/prebuild-commands.sh")), writer);
+        // We must escape special characters as this will be rendered into XML
+        String prebuildScript = writer.toString().replace("&", "&amp;").replace(">", "&gt;").replace("<", "&lt;");
+        params.put("cleanCommands", prebuildScript);
+        StringWriter xmlWriter = new StringWriter();
+        Velocity.evaluate(velocityContext, xmlWriter, "", jobTemplate);
+        String jobXml = xmlWriter.toString();
+        jarFile.close();
+        if (JenkinsProvider.jobExists(jsc, name)) {
+            try {
+                server.updateJob(name, jobXml, false);
+            } catch (IOException e) {
+                throw new RuntimeException(String.format("Failed to update Jenkins job: %s", name), e);
+            }
+        } else {
+            try {
+                server.createJob(name, jobXml, false);
+            } catch (IOException e) {
+                throw new RuntimeException(String.format("Failed to create Jenkins job: %s", name), e);
+            }
+        }
     }
 
     private String parseBranchRegex(String s) {
