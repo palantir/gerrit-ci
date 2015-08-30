@@ -1,59 +1,41 @@
-<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE html>
-<html>
-    <head>
-        <style>
-            body {} .jobPanel {
-                    margin: 10;
-                    width: 900px;
-                    background-color: #FAFFFA;
-                    text-alight: left;
-                    font-family: Arial, sans-serif;
-                }
-                sectionleft {
-                    background-color: #FCFCFC;
-                    width: 300px;
-                    float: left;
-                    padding: 20px;
-                }
-                sectionright {
-                    width: 500px;
-                    float: right;
-                    padding: 20px;
-                }
-        </style>
-    </head>
-    <div class="jobPanel">
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+<div class="sectionleft">
+    <div class="container-fluid">
+        <div class="row">
         <h1>Verify Job</h1>
-        <div id="jobIdLabel"></div>
-        <sectionleft>
-            <p id="verifyLabel" class="label" p>
-            Verify Job Command
-            </p>
-            <div id="verifyCommand"></div>
-            <p id="verifyCommandDescription" class="description">
+    <div class="col-sm-6" style="background-color:#bbea94;">
+            <label id="jobIdLabel" class="label"></label>
+            <label>Verify Command</label>
+            <div><div id="verifyCommand"></div></div>
+            <p id="cronCommandDescription" class="description">
                 Simple command or a shell script to run for verify jobs.
             </p>
-            <p id="verifyBranchRegexLabel" class="label">Regex for branches to verify</p>
-            <div id="verifyBranchRegex"></div>
+            <label id="verifyBranchRegexLabel">Regex for branches to verify</label>
+            <div><div id="verifyBranchRegex"></div></div>
             <p id="verifyBranchRegexDescription"></p>
-        </sectionleft>
-        <sectionright>
-            <p id="timeoutsLabel" class="label" p>
-                Timeout Minutes
-            </p>
-            <div id="timeoutMinutes"></div>
+            <div id="delete"></div>
+        </div>
+    <div class="col-sm-6" style="background-color:#d6f3bd;">
+        <label id="timeoutsLabel">Timeout Minutes</label>
+            <div><div id="timeoutMinutes"></div></div>
             <p id="timeoutMinutesDescription" class="description">
                 Jenkins will wait this many minutes before terminating the build.
             </p>
-            <p id="junitLabel" class="label" p>
-                Junit verify Settings
-            </p>
-            <div id="junitEnabled"></div>
-            <div id="junitPath"></div>
+            <label id="junitLabel">Junit Verify Settings</label>
+            <div><a id="junitEnabled"></a>
+            <p class="description">
+                Enable junit test reports.</p></div>
+            <div><div id="junitPath"></div></div>
             <p id="junitPathDescription" class="description">
-                Path to use for junit results (e.g. build/test-results/*.xml).
-            </p>
-        </sectionright>
+                Path to use for junit results (e.g. build/test-results/*.xml).</p>
+        </div>
     </div>
+</div>
+</body>
 </html>

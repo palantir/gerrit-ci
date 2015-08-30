@@ -1,59 +1,47 @@
-<?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE html>
-<html>
-    <head>
-        <style>
-            body {} .jobPanel {
-                    margin: 10;
-                    width: 900px;
-                    background-color: #FAFFFA;
-                    text-alight: left;
-                    font-family: Arial, sans-serif;
-                }
-                sectionleft {
-                    background-color: #FCFCFC;
-                    width: 300px;
-                    float: left;
-                    padding: 20px;
-                }
-                sectionright {
-                    width: 500px;
-                    float: right;
-                    padding: 20px;
-                }
-        </style>
-    </head>
-    <div class="jobPanel">
-        <h1>Time-Triggered Job</h1>
-        <div id="jobIdLabel"></div>
-        <sectionleft>
-            <p id="cronLabel" class="label" p>
-                Time-Triggered Command
-            </p>
-            <div id="cronCommand"></div>
-            <p id="cronCommandDescription" class="description">
-                Simple command or a shell script to run for time-triggered jobs.
-            </p>
-            <p id="cronScheduleLabel" class="label">Build Schedule</p>
-            <div id="cronJob"></div>
-            <p id="cronScheduleDescription"></p>
-        </sectionleft>
-        <sectionright>
-            <p id="timeoutsLabel" class="label" p>
-                Timeout Minutes
-            </p>
-            <div id="timeoutMinutes"></div>
-            <p id="timeoutMinutesDescription" class="description">
-                Jenkins will wait this many minutes before terminating the build.
-            </p>
-            <p id="junitLabel" class="label" p>
-                Junit Publish Settings
-            </p>
-            <div id="junitEnabled"></div>
-            <div id="junitPath"></div>
-            <p id="junitPathDescription" class="description">
-                Path to use for junit results (e.g. build/test-results/*.xml).
-            </p>
-        </sectionright>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+<script>
+    $(document).ready(function(){
+        $('[data-toggle="popover"]').popover();
+      });
+</script>
+</head>
+<body>
+<div class="sectionleft">
+    <div class="container-fluid">
+        <div class="row">
+            <h1>Time-Triggered Job</h1>
+            <div class="col-sm-6" style="background-color:#bbea94;">
+                <label id="jobIdLabel" class="label"></label>
+                <label>Time-Triggered Command</label>
+                <div><div id="cronCommand"></div></div>
+                <p id="cronCommandDescription" class="description">
+                    Simple command or a shell script to run for time-triggered jobs.
+                </p>
+                <label id="cronScheduleLabel">Build Schedule</label>
+                <div><div id="cronJob"></div><div id=toggleButton></div></div>
+                <p id="cronScheduleDescription"></p>
+                <div id="delete"></div>
+            </div>
+            <div class="col-sm-6" style="background-color:#d6f3bd;">
+                <label id="timeoutsLabel">Timeout Minutes</label>
+                <div><div id="timeoutMinutes"></div></div>
+                <p id="timeoutMinutesDescription" class="description">
+                    Jenkins will wait this many minutes before terminating the build.
+                </p>
+                <label id="junitLabel">Junit Publish Settings</label>
+                <div><a id="junitEnabled"></a>
+                <p class="description">
+                    Enable junit test reports.</p></div>
+                <div><div id="junitPath"></div></div>
+                <p id="junitPathDescription" class="description">
+                    Path to use for junit results (e.g. build/test-results/*.xml).</p>
+            </div>
+        </div>
     </div>
+</div>
+</body>
 </html>

@@ -95,7 +95,7 @@ public class JobPanels {
 
     //Adds general setting to an HTMLPanel
     public static void addCommonFields(HTMLPanel p){
-        CheckBox junitEnabled = new CheckBox("Publish JUnit test result report");
+        CheckBox junitEnabled = new CheckBox();
         junitEnabled.setName("junitEnabled");
         junitEnabled.setValue(true);
         TextBox junitPath = new TextBox();
@@ -139,7 +139,7 @@ public class JobPanels {
         jobName.setText(name);
         jobName.setVisible(false);
         Label jobNameLabel = new Label("Job Id: " + name);
-        p.add(jobNameLabel);
+        p.addAndReplaceElement(jobNameLabel, "jobIdLabel");
         p.add(jobName);
         TextBox jobType = new TextBox();
         jobType.setName("jobType");
