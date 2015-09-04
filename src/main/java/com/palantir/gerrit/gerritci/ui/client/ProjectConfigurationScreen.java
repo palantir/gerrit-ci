@@ -154,7 +154,7 @@ public class ProjectConfigurationScreen extends VerticalPanel {
                 add(createJob("publish"));
             }
         });
-        addCronJob = new Button("+ Time-Triggered Job");
+        addCronJob = new Button("+ Scheduled (cron) Job");
         addCronJob.setEnabled(true);
         addCronJob.setStyleName("add");
         addCronJob.addClickHandler(new ClickHandler() {
