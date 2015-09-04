@@ -17,7 +17,6 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.StringWriter;
-import java.net.URI;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
@@ -56,6 +55,7 @@ import com.offbytwo.jenkins.JenkinsServer;
 import com.palantir.gerrit.gerritci.constants.JobType;
 import com.palantir.gerrit.gerritci.models.JenkinsServerConfiguration;
 import com.palantir.gerrit.gerritci.providers.JenkinsProvider;
+import com.palantir.gerrit.gerritci.util.ConfigFileUtils;
 import com.palantir.gerrit.gerritci.util.JenkinsJobParser;
 
 @Singleton
@@ -120,8 +120,8 @@ public class JobsServlet extends HttpServlet {
         if(!safetyCheck(getResponseCode(projectName), res, projectName))
             return;
         try {
-            JenkinsServerConfiguration jsc = getJenkinsConfigFromFile(new File(sitePaths.etc_dir, "gerrit-ci.config"));
-            ArrayList<String> jobNames = getJobsFromFile(new File(sitePaths.etc_dir, projectName));
+            JenkinsServerConfiguration jsc = ConfigFileUtils.getJenkinsConfigFromFile(new File(sitePaths.etc_dir, "gerrit-ci.config"));
+            ArrayList<String> jobNames = ConfigFileUtils.getJobsFromFile(new File(sitePaths.etc_dir, projectName));
             Map<String, JsonArray> jobs = new HashMap<String, JsonArray>();
             for (String jobName : jobNames) {
                 String jobType = getTypeFromName(jobName);
@@ -148,23 +148,6 @@ public class JobsServlet extends HttpServlet {
             return "UNKNOWN";
     }
 
-    public static ArrayList<String> getJobsFromFile(File f) throws IOException {
-        ArrayList<String> jobs = new ArrayList<String>();
-        File projectConfigDirectory = f;
-        if (!projectConfigDirectory.exists())
-            projectConfigDirectory.mkdir();
-        File projectConfigFile = new File(projectConfigDirectory, "created_jobs");
-        if (!projectConfigFile.exists())
-            projectConfigFile.createNewFile();
-        Scanner scanner = new Scanner(projectConfigFile);
-        while (scanner.hasNext()) {
-            String line = scanner.next();
-            jobs.add(line);
-        }
-        scanner.close();
-        return jobs;
-    }
-
     @Override
     protected void doPut(HttpServletRequest req, HttpServletResponse res) throws ServletException,
         IOException {
@@ -187,8 +170,8 @@ public class JobsServlet extends HttpServlet {
         }
 
         File projectConfigFile = new File(sitePaths.etc_dir, "gerrit-ci.config");
-        Map<String, Object> serverParams = getJenkinsSpecificParams(projectConfigFile, gerritConfig, canonicalWebUrl);
-        JenkinsServerConfiguration jsc = getJenkinsConfigFromFile(projectConfigFile);
+        Map<String, Object> serverParams = ConfigFileUtils.getJenkinsSpecificParams(projectConfigFile, gerritConfig, canonicalWebUrl);
+        JenkinsServerConfiguration jsc = ConfigFileUtils.getJenkinsConfigFromFile(projectConfigFile);
 
         for (String jobName : jobsToParams.keySet()) {
             if (jobsToParams.get(jobName) == null) {
@@ -221,35 +204,6 @@ public class JobsServlet extends HttpServlet {
                 }
             }
         }
-    }
-
-    public static Map<String, Object> getJenkinsSpecificParams(File projectConfigDirectory, GerritConfig gerritConfig, String canonicalWebUrl) throws IOException {
-        Map<String, Object> params = new HashMap<String, Object>();
-
-        FileBasedConfig cfg = new FileBasedConfig(projectConfigDirectory, FS.DETECTED);
-        try {
-            cfg.load();
-        } catch (ConfigInvalidException | IOException e) {
-            logger.error("Error loading config file after get request:", e);
-            return null;
-        }
-
-        String sshPort = gerritConfig.getSshdAddress();
-        sshPort = sshPort.substring(sshPort.lastIndexOf(':') + 1);
-
-        String host = canonicalWebUrl.replace("https://", "").replace("http://", "");
-        if(host.contains(":")) {
-            host = host.substring(0, host.indexOf(':'));
-        }
-        if(host.endsWith("/")) {
-            host = host.substring(0, host.length() - 1);
-        }
-
-        params.put("gerritUser", cfg.getString("Settings", "Jenkins", "gerritUser"));
-        params.put("host", host);
-        params.put("port", sshPort);
-        params.put("credentialsId", cfg.getString("Settings", "Jenkins", "credentialsId"));
-        return params;
     }
 
     public static JsonObject makeJSonRequest(Map<String, JsonArray> jobs) {
@@ -471,30 +425,6 @@ public class JobsServlet extends HttpServlet {
                 throw new RuntimeException(String.format("Failed to create Jenkins job: %s", name), e);
             }
         }
-    }
-
-    public static JenkinsServerConfiguration getJenkinsConfigFromFile(File projectConfigDirectory){
-        FileBasedConfig cfg = new FileBasedConfig(projectConfigDirectory, FS.DETECTED);
-        try {
-            cfg.load();
-        } catch (ConfigInvalidException | IOException e) {
-            logger.error("Error loading config file after get request:", e);
-            return null;
-        }
-
-        String jenkinsUrlString = cfg.getString("Settings", "Jenkins", "jenkinsURL");
-        String jenkinsUserString = cfg.getString("Settings", "Jenkins", "jenkinsUser");
-        String jenkinsPasswordString = cfg.getString("Settings", "Jenkins", "jenkinsPassword");
-        JenkinsServerConfiguration jsc = new JenkinsServerConfiguration();
-
-        try {
-            jsc.setUri(new URI(jenkinsUrlString));
-        } catch (Exception e) {
-            logger.error("Error loading config file after get request:", e);
-        }
-        jsc.setUsername(jenkinsUserString);
-        jsc.setPassword(jenkinsPasswordString);
-        return jsc;
     }
 
     private String parseBranchRegex(String s) {
