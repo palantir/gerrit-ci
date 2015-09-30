@@ -94,7 +94,6 @@ public class ConfigurationScreen extends VerticalPanel {
 
 		ParagraphElement gerritUserLabel = Document.get().createPElement();
 		gerritUserLabel.setInnerText("Gerrit User");
-		gerritUserLabel.setClassName("label");
 		gerritUser.addKeyPressHandler(new KeyPressHandler() {
 			@Override
 			public void onKeyPress(KeyPressEvent event) {
@@ -115,7 +114,6 @@ public class ConfigurationScreen extends VerticalPanel {
 		// create labels
 		ParagraphElement jenkinsURLLabel = Document.get().createPElement();
 		jenkinsURLLabel.setInnerText("Jenkins Url");
-		jenkinsURLLabel.setClassName("label");
 		jenkinsURL.addKeyPressHandler(new KeyPressHandler() {
 			@Override
 			public void onKeyPress(KeyPressEvent event) {
@@ -125,7 +123,6 @@ public class ConfigurationScreen extends VerticalPanel {
 
 		ParagraphElement jenkinsUserLabel = Document.get().createPElement();
 		jenkinsUserLabel.setInnerText("Jenkins User");
-		jenkinsUserLabel.setClassName("label");
 		jenkinsUser.addKeyPressHandler(new KeyPressHandler() {
 			@Override
 			public void onKeyPress(KeyPressEvent event) {
@@ -135,7 +132,6 @@ public class ConfigurationScreen extends VerticalPanel {
 
 		ParagraphElement jenkinsPasswordLabel = Document.get().createPElement();
 		jenkinsPasswordLabel.setInnerText("Jenkins Password");
-		jenkinsPasswordLabel.setClassName("label");
 		add(HTML.wrap(jenkinsURLLabel));
 		jenkinsPassword.addKeyPressHandler(new KeyPressHandler() {
 			@Override
@@ -147,7 +143,6 @@ public class ConfigurationScreen extends VerticalPanel {
 
 		ParagraphElement crendentialsIdLabel = Document.get().createPElement();
 		crendentialsIdLabel.setInnerText("Credentials Id");
-		crendentialsIdLabel.setClassName("label");
 		credentialsId.addKeyPressHandler(new KeyPressHandler() {
 			@Override
 			public void onKeyPress(KeyPressEvent event) {

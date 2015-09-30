@@ -32,13 +32,18 @@ public enum JobType {
      * Publish builds will typically run when a change is merged. They will usually publish the
      * resultant artifact of the build to some repository.
      */
-    PUBLISH;
+    PUBLISH,
+    /**
+     * Cron builds will run on a configured schedule
+     */
+    CRON;
 
     private static final Map<JobType, String> nameMap = ImmutableMap.of(VERIFY, "verify", PUBLISH,
-        "publish");
+        "publish", CRON, "cron");
 
     private static final Map<JobType, String> templateMap = ImmutableMap.of(VERIFY,
-        "/jenkins-verify-job.vm", PUBLISH, "/jenkins-publish-job.vm");
+        "/jenkins-verify-job.xml", PUBLISH, "/jenkins-publish-job.xml", CRON, "/jenkins-cron-job.xml");
+
 
     /**
      * Given a JobType, gives the filename of the template file to use when creating new builds.
