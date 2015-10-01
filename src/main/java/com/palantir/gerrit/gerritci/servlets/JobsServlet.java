@@ -13,17 +13,16 @@
 //   limitations under the License.
 package com.palantir.gerrit.gerritci.servlets;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.StringWriter;
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Scanner;
-import java.util.TimeZone;
 import java.util.jar.JarFile;
 
 import javax.servlet.ServletException;
@@ -42,13 +41,19 @@ import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.FileMode;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.ObjectInserter;
+import org.eclipse.jgit.lib.ObjectLoader;
 import org.eclipse.jgit.lib.PersonIdent;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.RefUpdate;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.lib.TreeFormatter;
+import org.eclipse.jgit.revwalk.RevCommit;
+import org.eclipse.jgit.revwalk.RevTree;
+import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.storage.file.FileBasedConfig;
 import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
+import org.eclipse.jgit.treewalk.TreeWalk;
+import org.eclipse.jgit.treewalk.filter.PathFilter;
 import org.eclipse.jgit.util.FS;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -121,38 +126,56 @@ public class JobsServlet extends HttpServlet {
         }
     }
 
-    @Override
-    protected void doGet(HttpServletRequest req, HttpServletResponse res) throws ServletException,
-        IOException {
-        String encodedProjectName =
-            req.getRequestURI().substring(req.getRequestURI().lastIndexOf('/') + 1);
-        String projectName = encodedProjectName.replace("%2F", "/");
+	@Override
+	protected void doGet(HttpServletRequest req, HttpServletResponse res)
+			throws ServletException, IOException {
+		String encodedProjectName = req.getRequestURI().substring(
+				req.getRequestURI().lastIndexOf('/') + 1);
+		String projectName = encodedProjectName.replace("%2F", "/");
 
-        //Always send 200 status and handle errors in ProjectScreenSettings
-        res.setStatus(200);
-        res.setContentType("application/json");
-        res.setCharacterEncoding("UTF-8");
+		// Always send 200 status and handle errors in ProjectScreenSettings
+		res.setStatus(200);
+		res.setContentType("application/json");
+		res.setCharacterEncoding("UTF-8");
 
-        //When an error occurs, this returns an error message to ProjectScreenSettings to warn the user.
-        if(!safetyCheck(getResponseCode(projectName), res, projectName))
-            return;
-        try {
-            JenkinsServerConfiguration jsc = ConfigFileUtils.getJenkinsConfigFromFile(new File(sitePaths.etc_dir, "gerrit-ci.config"));
-            ArrayList<String> jobNames = ConfigFileUtils.getJobsFromFile(new File(sitePaths.etc_dir, projectName));
-            Map<String, JsonArray> jobs = new HashMap<String, JsonArray>();
-            for (String jobName : jobNames) {
-                String jobType = getTypeFromName(jobName);
-                JsonArray params = JenkinsJobParser.parseJenkinsJob(jobName, jobType, jsc);
-                jobs.put(jobName, params);
-            }
-            JsonObject returnObj = makeJSonRequest(jobs);
-            res.getWriter().write(returnObj.toString());
-        } catch (Exception e) {
-            logger.error("Error checking job from Jenkins:", e);
-            JsonObject errorMsg = makeErrorJobObject(connectionError);
-            res.getWriter().write(errorMsg.toString());
-        }
-    }
+		// When an error occurs, this returns an error message to
+		// ProjectScreenSettings to warn the user.
+		if (!safetyCheck(getResponseCode(projectName), res, projectName))
+			return;
+		try {
+			JenkinsServerConfiguration jsc = ConfigFileUtils
+					.getJenkinsConfigFromFile(new File(sitePaths.etc_dir,
+							"gerrit-ci.config"));
+			String gitPath = getGitPath(sitePaths);
+			File gitDir = new File(gitPath, projectName + ".git");
+			String jobsString = getPrevJobs(gitDir);
+			// ignore first 5 characters as string starts with "jobs,"
+			logger.info("jobs " + jobsString);
+			Map<String, JsonArray> jobs = new HashMap<String, JsonArray>();
+			try {
+				String[] jobNames = jobsString.substring(5).split(",");
+				for (String jobName : jobNames) {
+					logger.info("Job Name: " + jobName);
+					String jobType = getTypeFromName(jobName);
+					if (!jobType.equals("UNKNOWN")) {
+						JsonArray params = JenkinsJobParser.parseJenkinsJob(
+								jobName, jobType, jsc);
+						jobs.put(jobName.replace("/", "_"), params);
+						logger.info("Job Type: " + jobType);
+					}
+				}
+			} catch (StringIndexOutOfBoundsException e) {
+				logger.info("No job history.");
+			}
+			JsonObject returnObj = makeJSonRequest(jobs);
+			logger.info("returning " + returnObj.toString());
+			res.getWriter().write(returnObj.toString());
+		} catch (Exception e) {
+			logger.error("Error checking job from Jenkins:", e);
+			JsonObject errorMsg = makeErrorJobObject(connectionError);
+			res.getWriter().write(errorMsg.toString());
+		}
+	}
 
     private static String getTypeFromName(String name) {
         if (name.startsWith("cron"))
@@ -245,13 +268,6 @@ public class JobsServlet extends HttpServlet {
             IOException, NoSuchProjectException, NoFilepatternException, GitAPIException {
         Map<String, Map<String, String>> jobToParams = new HashMap<String, Map<String, String>>();
 
-        File projectConfigDirectory = new File(sitePaths.etc_dir, projectName);
-        if (!projectConfigDirectory.exists())
-            projectConfigDirectory.mkdir();
-        File projectConfigFile = new File(projectConfigDirectory, "created_jobs");
-        if (!projectConfigFile.exists())
-            projectConfigFile.createNewFile();
-
         JsonObject requestBody = (JsonObject) (new JsonParser()).parse(CharStreams.toString(req.getReader()));
 
         // get number of jobs
@@ -259,15 +275,6 @@ public class JobsServlet extends HttpServlet {
         int numOfJobs = requestBody.get("items").getAsJsonArray().size();
 
         ArrayList<String> receivedJobNames = new ArrayList<String>();
-
-        if (numOfJobs < 1) {
-            ArrayList<String> deletedJobs = updateProjectJobFiles(projectConfigFile, projectConfigDirectory, receivedJobNames);
-            for (String deleted : deletedJobs) {
-                jobToParams.put(deleted, null);
-            }
-            return jobToParams;
-        }
-
         CurrentUser currentUser = this.projectControlFactory.controlFor(new NameKey(projectName)).getCurrentUser();
         String gitPath = getGitPath(sitePaths);
         File gitDir = new File(gitPath, projectName + ".git");
@@ -288,9 +295,8 @@ public class JobsServlet extends HttpServlet {
             type = type.substring(1, type.length() - 1);
             int numOfParams = jobObject.get("items").getAsJsonArray().size();
             JsonArray paramsArray = jobObject.get("items").getAsJsonArray();
-            FileBasedConfig jobConfig = makeJobConfigFile(projectConfigDirectory, jobName, currentUser);
             Map<String, String> parsedParams = new HashMap<String, String>();
-            parsedParams.put("projectName", projectName);
+            parsedParams.put("projectName", projectName.replace("/", "_"));
             for (int j = 0; j < numOfParams; j++) {
                 String field = paramsArray.get(j).getAsJsonObject().get("field").toString();
                 field = field.substring(1, field.length() - 1);
@@ -298,64 +304,24 @@ public class JobsServlet extends HttpServlet {
                 value = value.substring(1, value.length() - 1);
                 parsedParams.put(field, value);
                 // update jobconfig files
-                jobConfig.setString("jobType", type, field, value);
             }
-            jobConfig.save();
-            jobsToIds.put(jobName, createGitFileId(repository, jobConfig, objectInserter, jobName));
+            jobsToIds.put(jobName, createGitFileId(repository, parsedParams.toString(), objectInserter, jobName));
             jobToParams.put(jobName, parsedParams);
         }
+        StringBuilder sb = new StringBuilder("jobs,");
         for (String jobName : jobsToIds.keySet()) {
-            treeFormatter.append(jobName + ".config", FileMode.REGULAR_FILE, jobsToIds.get(jobName));
+        	sb.append(jobName + ",");
         }
+        treeFormatter.append("jobs", FileMode.REGULAR_FILE, objectInserter.insert(Constants.OBJ_BLOB, sb.toString().getBytes("utf-8")));
         ObjectId treeId = objectInserter.insert(treeFormatter);
         objectInserter.flush();
-        updateProjectRef(treeId, objectInserter, repository, currentUser);
+        ArrayList<String> deletedJobs = updateProjectRef(treeId, receivedJobNames, objectInserter, repository, currentUser);
         // update or create project files for all jobs
-        ArrayList<String> deletedJobs = updateProjectJobFiles(projectConfigFile, projectConfigDirectory, receivedJobNames);
         for (String deleted : deletedJobs) {
             jobToParams.put(deleted, null);
         }
         // returns map of job name to params
         return jobToParams;
-    }
-
-    public static ArrayList<String> updateProjectJobFiles(File projectFile, File projectConfigDirectory, ArrayList<String> receivedJobNames)
-            throws IOException {
-
-        Scanner scanner = new Scanner(projectFile);
-
-        ArrayList<String> updatedJobs = new ArrayList<String>();
-        ArrayList<String> newJobs = new ArrayList<String>();
-        ArrayList<String> deletedJobs = new ArrayList<String>();
-
-        while (scanner.hasNextLine()) {
-            String line = scanner.nextLine();
-            if (receivedJobNames.contains(line)) {
-                updatedJobs.add(line);
-                receivedJobNames.remove(line);
-            } else {
-                deletedJobs.add(line);
-            }
-        }
-        logger.info("There are " + receivedJobNames.size() + " new jobs");
-        logger.info("There are " + deletedJobs.size() + " deleted jobs");
-        logger.info("There are " + updatedJobs.size() + " updated jobs");
-        for (String s : receivedJobNames) {
-            newJobs.add(s);
-        }
-
-        scanner.close();
-        FileWriter writer = new FileWriter(projectFile, false);
-        for (String s : updatedJobs) {
-            writer.write(s);
-            writer.write("\n");
-        }
-        for (String s : newJobs) {
-            writer.write(s);
-            writer.write("\n");
-        }
-        writer.close();
-        return deletedJobs;
     }
 
     public static FileBasedConfig makeJobConfigFile(File etc_dir, String jobName, CurrentUser currentUser) {
@@ -415,25 +381,34 @@ public class JobsServlet extends HttpServlet {
         return cfg.getString("gerrit", null, "basePath");
     }
 
-    public static ObjectId createGitFileId(Repository repository, FileBasedConfig jobConfig, ObjectInserter objectInserter, String jobName) throws UnsupportedEncodingException, IOException{
-        ObjectId fileId = objectInserter.insert(Constants.OBJ_BLOB, jobConfig.toText().getBytes("utf-8"));
+    public static ObjectId createGitFileId(Repository repository, String jobConfig, ObjectInserter objectInserter, String jobName) throws UnsupportedEncodingException, IOException{
+        ObjectId fileId = objectInserter.insert(Constants.OBJ_BLOB, jobConfig.getBytes("utf-8"));
         objectInserter.flush();
         logger.info("Created blobId " + fileId + " for " + jobName);
         return fileId;
     }
 
-    public static void updateProjectRef(ObjectId treeId, ObjectInserter objectInserter, Repository repository, CurrentUser currentUser)
+    public static ArrayList<String> updateProjectRef(ObjectId treeId, ArrayList<String> receivedJobNames, ObjectInserter objectInserter, Repository repository, CurrentUser currentUser)
             throws IOException, NoFilepatternException, GitAPIException {
         // Create a branch
         Ref gerritCiRef = repository.getRef("refs/meta/gerrit-ci");
         CommitBuilder commitBuilder = new CommitBuilder();
         commitBuilder.setTreeId(treeId);
         logger.info("treeId: " + treeId);
-
+        ArrayList<String> deletedJobs = new ArrayList<String>();
         if (gerritCiRef != null) {
             ObjectId prevCommit = gerritCiRef.getObjectId();
             logger.info("prevCommit: " + prevCommit);
             commitBuilder.setParentId(prevCommit);
+            String prevJobs = getPrevJobs(repository.getDirectory());
+            String[] jobNames = prevJobs.split(",");
+            for(int i = 0; i<jobNames.length; i++){
+                if (receivedJobNames.contains(jobNames[i])) {
+                    receivedJobNames.remove(jobNames[i]);
+                } else {
+                    deletedJobs.add(jobNames[i]);
+                }
+            }
         }
         // build commit
         logger.info("Adding git tree : " + treeId);
@@ -449,6 +424,7 @@ public class JobsServlet extends HttpServlet {
         newRef.setNewObjectId(commitId);
         newRef.update();
         repository.close();
+        return deletedJobs;
     }
 
     /**
@@ -480,6 +456,7 @@ public class JobsServlet extends HttpServlet {
         StringWriter xmlWriter = new StringWriter();
         Velocity.evaluate(velocityContext, xmlWriter, "", jobTemplate);
         String jobXml = xmlWriter.toString();
+        name = name.replace("/", "_");
         jarFile.close();
         if (JenkinsProvider.jobExists(jsc, name)) {
             try {
@@ -503,5 +480,34 @@ public class JobsServlet extends HttpServlet {
         s = String.format("(?!refs/meta/)%s", s);
         s = String.format("^%s$", s);
         return s;
+    }
+    
+    private static String getPrevJobs(File gitDir) throws IOException{
+		Repository repository = new FileRepositoryBuilder().setGitDir(
+				gitDir).build();
+		Ref gerritCiRef = repository.getRef("refs/meta/gerrit-ci");
+		ByteArrayOutputStream baos = new ByteArrayOutputStream();
+    	if (gerritCiRef != null) {
+			ObjectId lastCommitId = gerritCiRef.getObjectId();
+			logger.info("prevCommit: " + lastCommitId);
+
+			RevWalk revWalk = new RevWalk(repository);
+			RevCommit commit = revWalk.parseCommit(lastCommitId);
+			RevTree tree = commit.getTree();
+			TreeWalk treeWalk = new TreeWalk(repository);
+			treeWalk.addTree(tree);
+			treeWalk.setRecursive(true);
+			while (treeWalk.next()) {
+				ObjectId objectId = treeWalk.getObjectId(0);
+				ObjectLoader loader = repository.open(objectId);
+				loader.copyTo(baos);
+			}
+			revWalk.close();
+			treeWalk.close();
+			repository.close();
+		}
+		// ignore first 5 characters as string starts with "jobs,"
+		logger.info("jobs " + baos.toString());
+		return  baos.toString();
     }
 }

@@ -61,23 +61,6 @@ public class ConfigFileUtils {
         return jsc;
     }
 
-    public static ArrayList<String> getJobsFromFile(File f) throws IOException {
-        ArrayList<String> jobs = new ArrayList<String>();
-        File projectConfigDirectory = f;
-        if (!projectConfigDirectory.exists())
-            projectConfigDirectory.mkdir();
-        File projectConfigFile = new File(projectConfigDirectory, "created_jobs");
-        if (!projectConfigFile.exists())
-            projectConfigFile.createNewFile();
-        Scanner scanner = new Scanner(projectConfigFile);
-        while (scanner.hasNext()) {
-            String line = scanner.next();
-            jobs.add(line);
-        }
-        scanner.close();
-        return jobs;
-    }
-
     public static Map<String, Object> getJenkinsSpecificParams(File projectConfigDirectory, GerritConfig gerritConfig, String canonicalWebUrl) throws IOException {
         Map<String, Object> params = new HashMap<String, Object>();
 
