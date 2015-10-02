@@ -120,22 +120,25 @@ public class JobsServlet extends HttpServlet {
     }
 
     @Override
-    protected void doGet(HttpServletRequest req, HttpServletResponse res) throws ServletException,
-        IOException {
-        String encodedProjectName =
-            req.getRequestURI().substring(req.getRequestURI().lastIndexOf('/') + 1);
+    protected void doGet(HttpServletRequest req, HttpServletResponse res)
+            throws ServletException, IOException {
+        String encodedProjectName = req.getRequestURI().substring(
+                req.getRequestURI().lastIndexOf('/') + 1);
         String projectName = encodedProjectName.replace("%2F", "/");
 
-        //Always send 200 status and handle errors in ProjectScreenSettings
+        // Always send 200 status and handle errors in ProjectScreenSettings
         res.setStatus(200);
         res.setContentType("application/json");
         res.setCharacterEncoding("UTF-8");
 
-        //When an error occurs, this returns an error message to ProjectScreenSettings to warn the user.
-        if(!safetyCheck(getResponseCode(projectName), res, projectName))
+        // When an error occurs, this returns an error message to
+        // ProjectScreenSettings to warn the user.
+        if (!safetyCheck(getResponseCode(projectName), res, projectName))
             return;
         try {
-            JenkinsServerConfiguration jsc = ConfigFileUtils.getJenkinsConfigFromFile(new File(sitePaths.etc_dir, "gerrit-ci.config"));
+            JenkinsServerConfiguration jsc = ConfigFileUtils
+                    .getJenkinsConfigFromFile(new File(sitePaths.etc_dir,
+                            "gerrit-ci.config"));
             ArrayList<String> jobNames = ConfigFileUtils.getJobsFromFile(new File(sitePaths.etc_dir, projectName));
             Map<String, JsonArray> jobs = new HashMap<String, JsonArray>();
             for (String jobName : jobNames) {
