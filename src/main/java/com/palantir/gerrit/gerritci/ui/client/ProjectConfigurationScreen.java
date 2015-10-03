@@ -203,7 +203,7 @@ public class ProjectConfigurationScreen extends VerticalPanel {
     private static void updateActiveJobs() {
         for (HTMLPanel panel : activePanels) {
             Map<String, String> jobParams = JobPanels.getValueMap(panel);
-            String jobName = jobParams.get("jobName");
+            String jobName = jobParams.get("jobName").replace("/", "_");
             jobParams.remove("jobName");
             jobsList.put(jobName, jobParams);
         }

@@ -144,7 +144,7 @@ public class JobsServlet extends HttpServlet {
             for (String jobName : jobNames) {
                 String jobType = getTypeFromName(jobName);
                 JsonArray params = JenkinsJobParser.parseJenkinsJob(jobName, jobType, jsc);
-                jobs.put(jobName, params);
+                jobs.put(jobName.replace("/", "_"), params);
             }
             JsonObject returnObj = makeJSonRequest(jobs);
             res.getWriter().write(returnObj.toString());
@@ -291,7 +291,7 @@ public class JobsServlet extends HttpServlet {
             JsonArray paramsArray = jobObject.get("items").getAsJsonArray();
             FileBasedConfig jobConfig = makeJobConfigFile(projectConfigDirectory, jobName, currentUser);
             Map<String, String> parsedParams = new HashMap<String, String>();
-            parsedParams.put("projectName", projectName);
+            parsedParams.put("projectName", projectName.replace("/", "_"));
             for (int j = 0; j < numOfParams; j++) {
                 String field = paramsArray.get(j).getAsJsonObject().get("field").toString();
                 field = field.substring(1, field.length() - 1);
@@ -481,6 +481,7 @@ public class JobsServlet extends HttpServlet {
         StringWriter xmlWriter = new StringWriter();
         Velocity.evaluate(velocityContext, xmlWriter, "", jobTemplate);
         String jobXml = xmlWriter.toString();
+        name = name.replace("/", "_");
         jarFile.close();
         if (JenkinsProvider.jobExists(jsc, name)) {
             try {
