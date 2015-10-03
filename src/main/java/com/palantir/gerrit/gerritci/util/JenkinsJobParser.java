@@ -49,7 +49,8 @@ public class JenkinsJobParser {
     public static JsonArray parseJenkinsJob(String jobName, String jobType, JenkinsServerConfiguration jsc) {
         JsonArray items = new JsonArray();
         boolean exists = JenkinsProvider.jobExists(jsc, jobName);
-
+        if(jobType.equals("UNKOWN"))
+            return null;
         if(exists) {
             items.add(jsonObj("jobName", jobName));
             items.add(jsonObj("jobType", jobType));
