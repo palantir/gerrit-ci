@@ -183,8 +183,8 @@ public class ProjectConfigurationScreen extends VerticalPanel {
         TextBox jobName = new TextBox();
         jobName.setName("jobName");
         jobName.setText(jobType + "_" + projectName + "_" + Random.nextInt());
-        jobName.setVisible(false);
-        p.add(jobName);
+        jobName.setVisible(true);
+        p.addAndReplaceElement(jobName, "jobName");
         final Button deleteButton = new Button("delete");
         deleteButton.addClickHandler(new ClickHandler() {
             @Override
