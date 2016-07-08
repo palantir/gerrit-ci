@@ -63,7 +63,7 @@ repositories {
     mavenLocal()
     maven { url "https://dl.bintray.com/mass/maven/" }
     mavenCentral()
-    maven { url "http://repo.jenkins-ci.org/public/" }
+    maven { url "https://repo.jenkins-ci.org/public/" }
 }
 
 jar {
