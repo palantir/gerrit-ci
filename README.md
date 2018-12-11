@@ -1,3 +1,10 @@
+# WARNING: No longer developed or maintained
+
+We stopped using this plugin in Palantir a few years ago, and have not
+maintained this plugin in some time.  If you have forked this repo and
+have been maintaining it and would like to become the new upstream, send
+us a note and we'll link to your project from this README.
+
 # Gerrit-CI [![BuildStatus](http://img.shields.io/travis/palantir/gerrit-ci.svg?style=flat)](https://travis-ci.org/palantir/gerrit-ci) [![Issues](http://img.shields.io/github/issues/palantir/gerrit-ci.svg?style=flat)](https://github.com/palantir/gerrit-ci/issues)
 
 > Plugin for Gerrit enabling self-service continuous integration workflows with Jenkins.
